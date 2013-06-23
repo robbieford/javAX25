@@ -6,30 +6,27 @@
 <javac destdir="bin"
 deprecation="false"
 optimize="true"
-debug="true" 
-fork="yes"
-	executable="c:\Program Files\Java\jdk1.6.0_24\bin\javac"
-	>
-
+debug="true" >
 <classpath path="RXTXcomm.jar;javAPRSSrvr.jar" />
 <src path="src" />
+<!--
 <include name="**/*.java" />
-
+-->
+<include name="sivantoledo/**/*.java" />
 </javac>
 </target>
 
 <target name="build-jars" depends="compile">
-  <jar jarfile="bin/javAX25lib.zip">
+  <jar jarfile="bin/javAX25lib.jar">
     <fileset dir="bin" includes="sivantoledo/ax25/**"/>
     <fileset dir="bin" includes="sivantoledo/soundcard/**"/>
   </jar>
 
-  <jar jarfile="bin/javAX25all.zip">
+  <jar jarfile="bin/javAX25all.jar">
     <fileset dir="bin" includes="**/*.class" excludes="obsolete/**" />
    </jar>
 </target>
 	
-
 <target name="clean">
 <delete dir="bin" failonerror="false" />
 </target>
