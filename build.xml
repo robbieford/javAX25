@@ -20,6 +20,7 @@ debug="true" >
   <jar jarfile="bin/javAX25lib.jar">
     <fileset dir="bin" includes="sivantoledo/ax25/**"/>
     <fileset dir="bin" includes="sivantoledo/soundcard/**"/>
+    <fileset dir="bin" includes="sivantoledo/sampledsound/**"/>
   </jar>
 
   <jar jarfile="bin/javAX25all.jar">
