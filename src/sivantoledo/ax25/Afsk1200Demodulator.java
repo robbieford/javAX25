@@ -264,34 +264,9 @@ public class Afsk1200Demodulator
 				i++;
 			}
 			
-			//if (sample > vox_threshold || sample < -vox_threshold) {
-			//	vox_countdown = sample_rate; // 1s lingering
-			//	if (vox_state==false)
-			//		System.err.println("vox activating");
-			//	vox_state = true;
-			//}
-			
-			//if (vox_countdown == 0) {
-			//	if (vox_state==true)
-			//		System.err.println("vox deactivating");
-			//	vox_state = false;
-			//	continue;
-			//} else vox_countdown--;
-			
 			u1[j_td]= sample;			
-			//u1[j_td]= s[i];			
-			//u2[j] = Filter.filter(u1, j, Filter.BANDPASS_1150_1250_48000_39);
-			//x[j]  = Filter.filter(u2, j, Filter.BANDPASS_2150_2250_48000_39);
-			//u2[j] = Filter.filter(u1, j, Filter.BANDPASS_1150_1250_48000_39);
 			x[j_td]  = Filter.filter(u1, j_td, td_filter);
 						
-			// compute correlation running value
-			//c0_real[j] = x[j_td]*f0_cos[j];
-			//c0_imag[j] = x[j_td]*f0_sin[j];
-			//
-			//c1_real[j] = x[j_td]*f1_cos[j_f1];
-			//c1_imag[j] = x[j_td]*f1_sin[j_f1];
-			
 			c0_real[j_corr] = x[j_td]*(float) Math.cos(phase_f0);
 			c0_imag[j_corr] = x[j_td]*(float) Math.sin(phase_f0);
 			
@@ -309,17 +284,9 @@ public class Afsk1200Demodulator
 			      ci = sum(c1_imag,j_corr);
 			float c1 = (float) Math.sqrt(cr*cr + ci*ci);
 			
-			//diff[j_corr] = c0-c1;
 			diff[j_cd] = c0-c1;
-			//fdiff[j_corr] = Filter.filter(diff,j_corr,Filter.LOWPASS_1200_48000_39);
-			//float fdiff = Filter.filter(diff,j_corr,cd_filter);
 			float fdiff = Filter.filter(diff,j_cd,cd_filter);
 
-			//System.out.printf("%d %f %f : ",j,diff[j],fdiff[j]);
-			//System.out.printf("%d %f %f %f %f : ",j,f0_cos[j],f0_sin[j],f1_cos[j_f1],f1_sin[j_f1]);
-
-			//float previous_fdiff = (j_corr==0) ? fdiff[fdiff.length-1] : fdiff[j_corr-1];
-			//if (previous_fdiff*fdiff[j_corr] < 0 || previous_fdiff==0) {
 			if (previous_fdiff*fdiff < 0 || previous_fdiff==0) {
 				
 				// we found a transition
@@ -455,11 +422,6 @@ public class Afsk1200Demodulator
 			j_corr++;
 			if (j_corr==c0_real.length /* samples_per_bit*/) j_corr=0;
 
-			//j++;
-			//if (j==samples_per_bit) j=0;
-			
-			//j_f1++;
-			//if (j_f1==6*samples_per_bit) j_f1=0;
 		}
 	}
 }

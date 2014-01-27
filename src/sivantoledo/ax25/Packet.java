@@ -91,10 +91,6 @@ public class Packet {
 	}
 	public float[] statistics() { return stats; }
 	
-	//public byte[] bytes()  { 
-	//	return Arrays.copyOf(packet, size-2); // trim the checksum
-	//}
-
 	public byte[] bytesWithCRC()  { 
 		return Arrays.copyOf(packet, size); // trim the checksum
 	}
@@ -385,14 +381,6 @@ public class Packet {
 			if (c >= 0x20 && c <= 0x7E) builder.append(c);
 			else builder.append(String.format("\\x%02x",payload[i]));
 		}
-		/*
-		for (int i=0; i<size; i++) {
-			char c = (char) packet[i];
-			if (c >= 0x20 && c <= 0x7E) builder.append(c);
-			else builder.append('.');
-		}
-		//builder.append(Arrays.toString(packet));
-		 */
 		builder.append("]");
 		return builder.toString();
 	}	

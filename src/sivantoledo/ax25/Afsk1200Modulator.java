@@ -39,11 +39,6 @@ public class Afsk1200Modulator
 		phase_inc_symbol = (float) (2.0*Math.PI*1200.0/sample_rate);
 	}
   	
-	//private float phase_f0, phase_f1;	
-	//private int t; // running sample counter
-
-	//private float f1cos, f1sin, f0cos, f0sin;
-	
 	/**************************/
 	/*** Packet Transmitter ***/
 	/**************************/
@@ -76,7 +71,6 @@ public class Afsk1200Modulator
 		tx_bytes = null; // no data
 		tx_state = TxState.PREAMBLE;
 		tx_index = (int) Math.ceil((double) seconds / (8.0/1200.0)); // number of flags to transmit
-		//if (transmit_controller!=null) transmit_controller.startTransmitter();
 		tx_symbol_phase = tx_dds_phase = 0.0f;
 	}
 	
@@ -89,7 +83,6 @@ public class Afsk1200Modulator
 		tx_state = TxState.PREAMBLE;
 		tx_index = (int) Math.ceil(tx_delay * 0.01 / (8.0/1200.0)); // number of flags to transmit
 		if (tx_index < 1) tx_index = 1;
-		//if (transmit_controller!=null) transmit_controller.startTransmitter();
 		tx_symbol_phase = tx_dds_phase = 0.0f;
 	}
 
@@ -186,7 +179,6 @@ public class Afsk1200Modulator
 		case DATA: 
 			if (tx_bytes==null) { // we just wanted to transmit tones to adjust the transmitter
 				tx_state = TxState.IDLE;
-				//if (transmit_controller!=null) transmit_controller.stopTransmitter();
 				return 0;
 			}
 			//System.out.printf("Data byte %02x\n",tx_bytes[tx_index]);

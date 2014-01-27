@@ -167,11 +167,7 @@ public class Test implements PacketHandler {
 		}
 
 		Test t = new Test();
-		//System.out.printf("%d %d\n",rate,filter_length);
 		Afsk1200Modulator mod = null;
-		//Afsk1200 afsk = null;
-		//PacketDemodulator afsk0 = null;
-		//PacketDemodulator afsk6 = null;
 		PacketDemodulator multi = null;
 		try {
 		  //afsk = new Afsk1200(rate,filter_length,0,t);
