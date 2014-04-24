@@ -7,7 +7,7 @@
 deprecation="false"
 optimize="true"
 debug="true" >
-<classpath path="RXTXcomm.jar;javAPRSSrvr.jar" />
+<classpath path="/usr/share/java/RXTXcomm.jar;javAPRSSrvr.jar" />
 <src path="src" />
 <!--
 <include name="**/*.java" />
