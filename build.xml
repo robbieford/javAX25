@@ -6,13 +6,15 @@
 <javac destdir="bin"
 deprecation="false"
 optimize="true"
-debug="true" >
+debug="true"
+includeantruntime="false" >
 <classpath path="/usr/share/java/RXTXcomm.jar;javAPRSSrvr.jar" />
 <src path="src" />
 <!--
 <include name="**/*.java" />
 -->
 <include name="sivantoledo/**/*.java" />
+<compilerarg value="-Xlint" />
 </javac>
 </target>
 
