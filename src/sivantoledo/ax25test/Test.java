@@ -20,28 +20,23 @@
  */
 package sivantoledo.ax25test;
 
-import java.io.BufferedReader;
-
-import gnu.io.CommPort;
-import gnu.io.CommPortIdentifier;
-import gnu.io.NoSuchPortException;
-import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.Properties;
 
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 import sivantoledo.ax25.Afsk1200Modulator;
 import sivantoledo.ax25.Afsk1200MultiDemodulator;
@@ -118,8 +113,14 @@ public class Test implements PacketHandler {
 		//	System.out.println("[[["+args[i]+"]]]");
 		//}
 		
-		Properties p = System.getProperties();
-
+		Properties p = new Properties();//System.getProperties();
+		try {
+			p.load(new FileInputStream("config.properties"));
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
 		/*** enumerate sound devices ***/
 		
 		if (p.containsKey("enumerate")) {
@@ -194,7 +195,7 @@ public class Test implements PacketHandler {
         new String[] {"WIDE1-1", "WIDE2-2"},
         Packet.AX25_CONTROL_APRS,
         Packet.AX25_PROTOCOL_NO_LAYER_3,
-        ">Java Modem Test Packet".getBytes());
+        ">HarrimanTest".getBytes());
 
 	  /*** loopback: testing the modem without sound ***/
 	  
@@ -239,6 +240,7 @@ public class Test implements PacketHandler {
 		
 		/*** process an input sound file ***/
 
+//		String fin = "./generated2.wav";//"./matlab/4Z1PF_3_MAXTRAC.wav";//
 		String fin = p.getProperty("file-input", null);
 		if (fin != null) {	
 			System.out.printf("Trying to decode packets from <%s>\n",fin);
