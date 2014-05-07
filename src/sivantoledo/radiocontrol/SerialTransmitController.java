@@ -11,6 +11,7 @@ import java.util.Enumeration;
 
 public class SerialTransmitController implements TransmitController {
 
+	@SuppressWarnings("unchecked")
 	public static void enumerate() {
 		Enumeration<CommPortIdentifier> ports = CommPortIdentifier.getPortIdentifiers();
 		System.out.println("Serial ports:");
@@ -24,6 +25,7 @@ public class SerialTransmitController implements TransmitController {
 	private boolean dtr = false;
 	private boolean rts = false;
 
+	@SuppressWarnings("unchecked")
 	public SerialTransmitController(String port, String rts_or_dtr) throws Exception {
 		CommPortIdentifier pi = null;
 		try {
