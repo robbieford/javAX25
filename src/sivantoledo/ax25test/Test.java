@@ -190,12 +190,18 @@ public class Test implements PacketHandler {
 	  
 		System.out.println("Callsign in test packet is: "+callsign);
 		
+		//[KK6BQJ>APRS,WIDE1-1,WIDE2-2:>HarrimanTest]
+				//[4Z1PF-3>APRS,4Z5LA-3,WIDE2-2:!3200.59N/03447.82E#Holon 144.800 MHz Digi\x0d]
+				//3518.11' N 12039.80' W
+		
+		//W6KWF-1>APOT30,WIDE1-1,WIDE2-1,qAR,N6CP-I2:!3549.94N/12057.54Wk 12.5V Blue Ford Ranger
+		
 	  Packet packet = new Packet("APRS",
         callsign,
-        new String[] {"WIDE1-1", "WIDE2-2"},
+        new String[] {"WIDE1-1", "WIDE2-1"},
         Packet.AX25_CONTROL_APRS,
         Packet.AX25_PROTOCOL_NO_LAYER_3,
-        ">HarrimanTest".getBytes());
+        "!3518.11N/12039.80EW#CSC564 Test in Lib".getBytes());
 
 	  /*** loopback: testing the modem without sound ***/
 	  
