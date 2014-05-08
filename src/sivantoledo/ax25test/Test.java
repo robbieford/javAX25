@@ -195,13 +195,14 @@ public class Test implements PacketHandler {
 				//3518.11' N 12039.80' W
 		
 		//W6KWF-1>APOT30,WIDE1-1,WIDE2-1,qAR,N6CP-I2:!3549.94N/12057.54Wk 12.5V Blue Ford Ranger
+		//KK6BQJ>APRS,WIDE1-1,WIDE2-1:!3518.11N/12039.80EW#CSC564 Test in Lib
 		
 	  Packet packet = new Packet("APRS",
         callsign,
         new String[] {"WIDE1-1", "WIDE2-1"},
         Packet.AX25_CONTROL_APRS,
         Packet.AX25_PROTOCOL_NO_LAYER_3,
-        "!3518.11N/12039.80EW#CSC564 Test in Lib".getBytes());
+        "!3518.11N/12039.80EWZ CSC564 Test in Lib".getBytes());
 
 	  /*** loopback: testing the modem without sound ***/
 	  
