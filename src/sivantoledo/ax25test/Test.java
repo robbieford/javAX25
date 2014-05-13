@@ -40,6 +40,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import sivantoledo.ax25.Afsk1200Modulator;
 import sivantoledo.ax25.Afsk1200MultiDemodulator;
+import sivantoledo.ax25.Arrays;
 import sivantoledo.ax25.Packet;
 import sivantoledo.ax25.PacketDemodulator;
 import sivantoledo.ax25.PacketHandler;
@@ -57,18 +58,18 @@ public class Test implements PacketHandler {
 	public void incSampleCount() { sample_count++; }
 	public void handlePacket(byte[] bytes) {
 		System.out.println(Packet.format(bytes));
-		return;
-		/*
+		//return;
+		
 		if (last!=null && Arrays.equals(last, bytes) && sample_count <= last_sample_count + 100) {
 			dup_count++;
 			System.out.printf("Duplicate, %d so far\n",dup_count);
 		} else {
 			packet_count++;
-			System.out.println(""+packet_count);
+			System.out.println("Packet Count:"+packet_count);
 			last = bytes;
 			last_sample_count = sample_count;
 		}
-		*/
+		
 	}
 	
 	
