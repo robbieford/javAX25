@@ -72,6 +72,13 @@ public class Test implements PacketHandler {
 		
 	}
 	
+	public int getUniqPacketCount() {
+		return packet_count;
+	}
+	
+	public int getDupPacketCount() {
+		return dup_count;
+	}
 	
 	public static void xxxptt(boolean transmit, SerialPort ptt_serial_port, String type) {
 		System.out.printf("PTT %b using %s\n",transmit,type);
@@ -298,6 +305,8 @@ public class Test implements PacketHandler {
 					int n = ios.read(raw);
 					if (n != raw.length) {
 						System.err.printf("Done!?!\n");
+						System.out.println("Total Number of unique packets decoded: " +   t.getUniqPacketCount());
+						System.out.println("Total Number of duplicate packets decoded: " +   t.getDupPacketCount());
 						System.exit(1);										
 					}
 					bb.rewind();
