@@ -38,8 +38,8 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import sivantoledo.ax25.Afsk1200Demodulator;
 import sivantoledo.ax25.Afsk1200Modulator;
-import sivantoledo.ax25.Afsk1200MultiDemodulator;
 import sivantoledo.ax25.Arrays;
 import sivantoledo.ax25.Packet;
 import sivantoledo.ax25.PacketDemodulator;
@@ -181,8 +181,9 @@ public class Test implements PacketHandler {
 		try {
 		  //afsk = new Afsk1200(rate,filter_length,0,t);
 		  //afsk0 = new Afsk1200Demodulator(rate,filter_length,0,t);
-		  //afsk6 = new Afsk1200Demodulator(rate,filter_length,6,t);
-		  multi = new Afsk1200MultiDemodulator(rate,t);
+//		  afsk6 = new Afsk1200Demodulator(rate,filter_length,6,t);
+		  multi = new Afsk1200Demodulator(rate,filter_length,3,t);
+		  //multi = new Afsk1200MultiDemodulator(rate,t);
 		  mod = new Afsk1200Modulator(rate);
 		} catch (Exception e) {
 			System.out.println("Exception trying to create an Afsk1200 object: "+e.getMessage());
@@ -242,13 +243,41 @@ public class Test implements PacketHandler {
 				System.err.println("File "+fout+" not found: "+fnfe.getMessage());
 				System.exit(1);
 			}
-		  mod.prepareToTransmit(packet);
-		  int n;
-		  float[] tx_samples = mod.getTxSamplesBuffer();
-		  while ((n = mod.getSamples()) > 0) {
-		  	for (int i=0; i<n; i++)
-		  	  ps.printf("%09e\n",tx_samples[i]);
-		  }
+			
+			int num_of_packets = Integer.parseInt(p.getProperty("number-packets-to-gen", "1").trim());
+			int count = 0;
+			
+			int ms_padding = Integer.parseInt(p.getProperty("ms-padding-between-packets", "100").trim());
+			
+			int num_padding_samples = rate*ms_padding/1000;
+			int pad_sample_count = 0;
+			
+			while(count < num_of_packets) {
+				
+				packet = new Packet("APRS",
+				        callsign,
+				        new String[] {"WIDE1-1", "WIDE2-1"},
+				        Packet.AX25_CONTROL_APRS,
+				        Packet.AX25_PROTOCOL_NO_LAYER_3,
+				        ("!3518.11N/12039.80EWZ CNT: " + count).getBytes());
+				
+				mod.prepareToTransmit(packet);
+				int n;
+				float[] tx_samples = mod.getTxSamplesBuffer();
+				while ((n = mod.getSamples()) > 0) {
+					for (int i=0; i<n; i++)
+						ps.printf("%09e\n",tx_samples[i]);
+				}
+				
+				while(pad_sample_count<num_padding_samples) {
+					ps.printf("%09e\n",0.0);
+					pad_sample_count++;
+				}
+				
+				pad_sample_count = 0;
+				count++;
+			}
+		  
 		  ps.close();
 			System.exit(0);
 		}
