@@ -317,96 +317,100 @@ public class Afsk1200Demodulator
 					f0_current_max = fdiff;
 				}
 				
-		    if (bits==0 || bits>7) {
-	        state=State.WAITING;
-	        data_carrier = false;
-  				flag_count     = 0;
-		    } else {
-		    	if (bits==7) {
-    				flag_count++;
-    				flag_separator_seen=false;
-		    		//System.out.printf("Seen %d flags in a row\n",flag_count);
-
-    				data = 0;
-		    		bitcount = 0;
-		    		switch (state) {
-		    		case WAITING:
-			    		state=State.JUST_SEEN_FLAG;
-			        data_carrier = true;
-			        
-			        statisticsInit(); // start measuring a new packet
-			    		break;
-		    		case JUST_SEEN_FLAG:
-  		    		break;
-		    		case DECODING:
-		    			if (packet!=null && packet.terminate()) {
-		    				statisticsFinalize();
-		    				packet.statistics(new float[] {emphasis,f0_max/-f1_min,max_period_error});
-		    				//System.out.print(String.format("%ddB:%.02f:%.02f\n", 
-		    			  //			              emphasis,f0_max/-f1_min,max_period_error));
-		    				if (handler!=null)
-		    				  handler.handlePacket(packet.bytesWithoutCRC());
-		    				else 
-		    					System.out.println(""+(++decode_count)+": "+packet);
-		    			}
-		    			packet = null;
-		    			state=State.JUST_SEEN_FLAG;
-		    			break;
-		    		}
-		    	} else {
-		    		switch (state) {
-		    		case WAITING:
-			    		break;
-		    		case JUST_SEEN_FLAG:
-		    			state=State.DECODING;
-  		    		break;
-		    		case DECODING:
-		    			break;
-		    		}
-		    		if (state==State.DECODING) {
-		    			if (bits != 1) {
-		    				flag_count     = 0;
-		    			} else {
-		    				if (flag_count>0 && !flag_separator_seen) flag_separator_seen=true;
-		    				else {
+			    if (bits==0 || bits>7) {
+		        state=State.WAITING;
+		        data_carrier = false;
+	  				flag_count     = 0;
+			    } else {
+			    	if (bits==7) {
+	    				flag_count++;
+	    				flag_separator_seen=false;
+			    		//System.out.printf("Seen %d flags in a row\n",flag_count);
+	
+	    				data = 0;
+			    		bitcount = 0;
+			    		switch (state) {
+			    		case WAITING:
+				    		state=State.JUST_SEEN_FLAG;
+				        data_carrier = true;
+				        
+				        statisticsInit(); // start measuring a new packet
+				    		break;
+			    		case JUST_SEEN_FLAG:
+	  		    		break;
+			    		case DECODING:
+			    			if (packet!=null && packet.terminate()) {
+			    				statisticsFinalize();
+			    				packet.statistics(new float[] {emphasis,f0_max/-f1_min,max_period_error});
+			    				//System.out.print(String.format("%ddB:%.02f:%.02f\n", 
+			    			  //			              emphasis,f0_max/-f1_min,max_period_error));
+			    				if (handler!=null)
+			    				  handler.handlePacket(packet.bytesWithoutCRC());
+			    				else 
+			    					System.out.println(""+(++decode_count)+": "+packet);
+			    			}
+			    			packet = null;
+			    			state=State.JUST_SEEN_FLAG;
+			    			break;
+			    		}
+			    	} else {
+			    		switch (state) {
+			    		case WAITING:
+				    		break;
+			    		case JUST_SEEN_FLAG:
+			    			state=State.DECODING;
+	  		    		break;
+			    		case DECODING:
+			    			break;
+			    		}
+			    		if (state==State.DECODING) {
+			    			if (bits != 1) {
 			    				flag_count     = 0;
-		    				}
-		    			}
-		    			
-			    		for (int k=0; k<bits-1; k++) {
-			    			bitcount++;
-			    			data >>= 1;
-			    			data += 128;
-			    			if (bitcount==8) {
-				    			if (packet==null) packet = new Packet();
-			    				//if (data==0xAA) packet.terminate();
-			    				if (!packet.addByte((byte) data)) {
-			    					state=State.WAITING; 
-						        data_carrier = false;
+			    			} else {
+			    				if (flag_count>0 && !flag_separator_seen) flag_separator_seen=true;
+			    				else {
+				    				flag_count     = 0;
 			    				}
-			    				//System.out.printf(">>> %02x %c %c\n", data, (char)data, (char)(data>>1));
-			    				data = 0;
-			    				bitcount = 0;
 			    			}
+			    			
+				    		for (int k=0; k<bits-1; k++) { //only loop when multiple bits have been seen
+				    			bitcount++;
+				    			data >>= 1;
+				    			data += 128;
+				    			if (bitcount==8) {
+					    			if (packet==null) packet = new Packet();
+				    				//if (data==0xAA) packet.terminate();
+					    			
+				    				if (!packet.addByte((byte) data)) { //if the packet is too large
+				    					state=State.WAITING; 
+				    					data_carrier = false;
+				    					System.err.println("Packet too Large. Throwing out");
+				    				}
+				    				//System.out.printf(">>> %02x %c %c\n", data, (char)data, (char)(data>>1));
+				    				data = 0;
+				    				bitcount = 0;
+				    			}
+				    		}
+				    		if (bits-1 != 5) { // the zero after the ones is not a stuffing
+				    			bitcount++;
+				    			data >>= 1;
+				    			if (bitcount==8) {
+					    			if (packet==null) packet = new Packet();
+				    				//if (data==0xAA) packet.terminate();
+				    				if (!packet.addByte((byte) data)) {
+				    					state=State.WAITING; 
+				    					data_carrier = false;
+				    					System.err.println("Packet too Large. Throwing out");
+				    				
+				    				}
+				    				//System.out.printf(">>> %02x %c %c\n", data, (char)data, (char)(data>>1));
+				    				data = 0;
+				    				bitcount = 0;
+				    			}
+				    		}
 			    		}
-			    		if (bits-1 != 5) { // the zero after the ones is not a stuffing
-			    			bitcount++;
-			    			data >>= 1;
-			    			if (bitcount==8) {
-				    			if (packet==null) packet = new Packet();
-			    				//if (data==0xAA) packet.terminate();
-			    				if (!packet.addByte((byte) data)) {
-			    					state=State.WAITING; 
-						        data_carrier = false;
-			    				}
-			    				//System.out.printf(">>> %02x %c %c\n", data, (char)data, (char)(data>>1));
-			    				data = 0;
-			    				bitcount = 0;
-			    			}
-			    		}
-		    		}
-		    	}
-		    }
+			    	}
+			    }
 			}
 			
 			previous_fdiff = fdiff;
