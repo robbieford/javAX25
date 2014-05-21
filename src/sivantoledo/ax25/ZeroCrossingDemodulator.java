@@ -19,7 +19,7 @@
  */
 package sivantoledo.ax25;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 
 public class ZeroCrossingDemodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
@@ -31,6 +31,10 @@ public class ZeroCrossingDemodulator
     private int sample_rate;
     //private int samples_per_bit;
     private float samples_per_bit;
+    
+    private float samples_per_1200_zCrossing;
+    private float samples_per_2200_zCrossing;
+    
     //private float[] u1, u2, x, f0_cos, f0_sin, f1_cos, f1_sin;
     private float[] u1, x;
     private float[] c0_real, c0_imag, c1_real, c1_imag;
@@ -106,6 +110,12 @@ public class ZeroCrossingDemodulator
         handler = h;
         this.sample_rate = sample_rate;
         this.samples_per_bit = (float) sample_rate / 1200.0f;
+        
+        samples_per_1200_zCrossing = samples_per_bit/4.0f;
+        samples_per_2200_zCrossing = (float) sample_rate /2200.0f/4.0f;
+        
+        
+        
         System.err.printf("samples per bit = %.3f\n", this.samples_per_bit);
 
         float[][][] tdf;
@@ -194,9 +204,48 @@ public class ZeroCrossingDemodulator
     private boolean flag_separator_seen = false; // to process the single-bit separation period between flags
     private int decode_count = 0;
     private boolean vox_state = false;
+    
+    private ArrayList<Float> samples = new ArrayList<Float> ();
+    
+    private int number_of_samples_since_zero_crossing;
+    
+    boolean is_1200_last_seen = false;
+    
+    private enum Freq {
+		f_1200,
+		f_2200;
+    };
+    
+    private Freq last_freq_seen;
 
     protected void addSamplesPrivate(float[] s, int n) {
-        int i = 0;
+       
+    	
+    	int distance = 0;
+    	
+    	Freq freq;
+    		
+    	for(int i = 0 ;i<s.length; i++) {
+    		samples.add(s[i]);
+    		//calculate zero crossing distance in samples
+    		distance = 0;
+    		
+    		if(distance > samples_per_1200_zCrossing) { //round down slightly
+    			freq = Freq.f_1200;
+    			
+    		} else {
+    			freq = Freq.f_2200;
+    		}
+    		
+    		if(freq != last_freq_seen) {
+    			
+    		}
+    		
+    		
+    	}
+    	
+    	
+    	int i = 0;
         while (i < n) {
             float sample;
             if (interpolate) {
