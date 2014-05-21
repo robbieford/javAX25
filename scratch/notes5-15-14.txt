@@ -1,0 +1,4 @@
+-Don't rely on the sythesized data find real data, see how it does in the wild
+-Confidence on each bit and start flipping them
+-Present 5-10 test cases
+-Controlled tracker stransmissions online?
