@@ -80,6 +80,7 @@ public class ZeroCrossingDemodulator
 
     //New Variables for Zero Crossing (migrate old ones here as we realize we need them
     //-----------------------------------------------------------------------------------vvv
+    private static final boolean DEBUG = true;
     //Structure Declarations
     private enum Freq {
 		f_1200,
@@ -87,6 +88,7 @@ public class ZeroCrossingDemodulator
     };
     
     //Variables
+    private long samplesReceived;
     private float samplesPerBit;
 
     private static final float SAMPLE_BUFFER_AMOUNT = 2;
@@ -109,6 +111,7 @@ public class ZeroCrossingDemodulator
     //private float maxValueInHistory;
     private float monotonicThreshold;
     private static final float ZERO_CROSSING_THRESHOLD_PERCENTAGE = 0.5f;
+	private static final float MONOTONIC_THRESHOLD_PERCENTAGE = 0.05f;
     private float averageValueInHistory;
     private float zeroCrossingThreshold;
     private ArrayList<Float> sampleHistory = new ArrayList<Float> ();
@@ -146,7 +149,7 @@ public class ZeroCrossingDemodulator
         samplesSinceLastRecalc = 0;
         sampleHistoryLength = (int)(Math.round(samplesPerBit)) * BIT_PERIODS_IN_HISTORY;
         sampleLength = samplesPer2200ZeroXing / 2;
-    	
+        samplesReceived = 0;
     	
         //End of new constructor code
     	
@@ -239,6 +242,12 @@ public class ZeroCrossingDemodulator
     	for (int i = 0; i < s.length; i ++) {
     		samplesSinceLastRecalc++;
     		samplesSinceLastXing++;
+    		samplesReceived++;
+    		
+    		if (DEBUG) {
+    			System.out.println("Processing Sample number: " + samplesReceived + " With Value: " + s[i]);
+    		}
+    		
     		samples.add(s[i]);
     		sampleHistory.add(s[i]);
     		//If we have enough data, go ahead
@@ -248,18 +257,31 @@ public class ZeroCrossingDemodulator
     			sampleHistory.remove(0);
     			
     			if (samplesSinceLastRecalc > SAMPLES_BETWEEN_HISTORY_STATS_RECALC){
+    				if (DEBUG) {
+    					System.out.println("Recalculating History...");
+    				}
     				historyStatisticsRecalculation();
+    				if (DEBUG) {
+    					System.out.println("Average: " + averageValueInHistory + " zThreshold: " + zeroCrossingThreshold
+    							+ " monotonicThreshold: " + monotonicThreshold);
+    				}
     			}
     			
     			if (isSamplesIncreasing()){
     				if(samples.get(samples.size() - 1) > averageValueInHistory + zeroCrossingThreshold) {
     					//Its going high!
+    					if (DEBUG) {
+    						System.out.println("We had a zero crossing going HIGH at sample " + samplesReceived);
+    					}
     					handleZeroCrossing();
     				}
     			}
     			else {
     				if(samples.get(samples.size() - 1) < averageValueInHistory - zeroCrossingThreshold) {
     					//Its going low!!
+    					if (DEBUG) {
+    						System.out.println("We had a zero crossing going LOW at sample " + samplesReceived);
+    					}
     					handleZeroCrossing();
     				}
     				
@@ -277,15 +299,12 @@ public class ZeroCrossingDemodulator
     	
     
     private void handleZeroCrossing() {
-    	int distance = 0;
+    	/**int distance = 0;
 
     	Freq freq;
 
     	//The last zero crossing is semi-recently then lets change to the processing stage...
-    	if (samplesSinceLastXing > (samplesPer1200ZeroXing + SAMPLE_BUFFER_AMOUNT)) {
-    		state = State.JUST_SEEN_FLAG;
-    	}
-    	else {
+    	if (samplesSinceLastXing < (samplesPer1200ZeroXing + SAMPLE_BUFFER_AMOUNT))  {
     		//Presumably we are in the decoding phase...
 	    	if(samplesSinceLastXing > (samplesPer1200ZeroXing - SAMPLE_BUFFER_AMOUNT)) { //round down slightly
 	    		freq = Freq.f_1200;
@@ -422,7 +441,7 @@ public class ZeroCrossingDemodulator
 	
 	    	}
 	    	lastFrequencySeen = freq;
-    	}
+    	}*/
     }
     
     private void historyStatisticsRecalculation() {
@@ -441,6 +460,7 @@ public class ZeroCrossingDemodulator
     	//maxValueInHistory = max;
     	averageValueInHistory = sum / sampleHistory.size();
     	zeroCrossingThreshold = ((Math.abs(max) + Math.abs(min)) / 2.0f) * ZERO_CROSSING_THRESHOLD_PERCENTAGE;
+    	monotonicThreshold = ((Math.abs(max) + Math.abs(min)) / 2.0f) * MONOTONIC_THRESHOLD_PERCENTAGE;
 	}
 
 	private boolean isSamplesIncreasing() {
