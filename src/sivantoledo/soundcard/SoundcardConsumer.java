@@ -32,14 +32,15 @@ public abstract class SoundcardConsumer {
 		System.out.printf("decay = %e\n", (double)decay);
 
 	}
-	//public void addSamples(float[] s) {
-	//	addSamples(s,s.length);
-	//}
 
 	protected abstract void addSamplesPrivate(float[] s, int n);
 	
 	public int peak() {
 		return (int) Math.ceil(peak*100.0f);
+	}
+
+	public void addSamples(float[] s) {
+		addSamples(s,s.length);
 	}
 
 	public void addSamples(float[] s, int n) {
