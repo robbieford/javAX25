@@ -25,15 +25,12 @@ public class ZeroCrossingDemodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
 {
 
+	//Old Variables
     private float[] td_filter;
     private float[] cd_filter;
     private int rate_index;
     private int sample_rate;
     //private int samples_per_bit;
-    private float samples_per_bit;
-    
-    private float samples_per_1200_zCrossing;
-    private float samples_per_2200_zCrossing;
     
     //private float[] u1, u2, x, f0_cos, f0_sin, f1_cos, f1_sin;
     private float[] u1, x;
@@ -44,19 +41,16 @@ public class ZeroCrossingDemodulator
     private int f0_i = 0, f1_i = 0;
     private int last_transition;
     private int data, bitcount;
-    private int vox_countdown = 0;
-    private float vox_threshold = 0.1f;
     private float phase_inc_f0, phase_inc_f1;
-    private float phase_inc_symbol;
     private Packet packet; // received packet
     private PacketHandler handler;
 
     private static enum State {
-
         WAITING,
         JUST_SEEN_FLAG,
         DECODING
     };
+    
     private State state = State.WAITING;
     //TransmitController transmit_controller;
     private int filter_index;
@@ -64,6 +58,18 @@ public class ZeroCrossingDemodulator
     private boolean interpolate = false;
     private float interpolate_last;
     private boolean interpolate_original;
+    
+    //Move Variables from in front of the add Samples Private Method
+    private int j_td;   // time domain index 
+    private int j_cd;   // time domain index 
+    private int j_corr; // correlation index 
+    private float phase_f0, phase_f1;
+    private int t; // running sample counter
+    private float f1cos, f1sin, f0cos, f0sin;
+    private int flag_count = 0;
+    private boolean flag_separator_seen = false; // to process the single-bit separation period between flags
+    private int decode_count = 0;
+    
     /*
      * Diagnostic variables for estimating packet quality
      */
@@ -72,6 +78,42 @@ public class ZeroCrossingDemodulator
     private float f0_current_max, f1_current_min;
     private float max_period_error;
 
+    //New Variables for Zero Crossing (migrate old ones here as we realize we need them
+    //-----------------------------------------------------------------------------------vvv
+    //Structure Declarations
+    private enum Freq {
+		f_1200,
+		f_2200;
+    };
+    
+    //Variables
+    private float samplesPerBit;
+
+    private static final float SAMPLE_BUFFER_AMOUNT = 2;
+    private float samplesPer1200ZeroXing;
+    private float samplesPer2200ZeroXing;
+    private int samplesSinceLastXing;
+    
+    private Freq lastFrequencySeen;
+
+    private float sampleLength;
+    private ArrayList<Float> samples = new ArrayList<Float> ();
+    private int samplesSinceLastFreqChange;
+    private float sampleAverage;
+    
+    private static final int SAMPLES_BETWEEN_HISTORY_STATS_RECALC = 5;
+    private static final int BIT_PERIODS_IN_HISTORY = 2;
+    private int sampleHistoryLength;
+    private int samplesSinceLastRecalc;
+    //private float minValueInHistory;
+    //private float maxValueInHistory;
+    private float monotonicThreshold;
+    private static final float ZERO_CROSSING_THRESHOLD_PERCENTAGE = 0.5f;
+    private float averageValueInHistory;
+    private float zeroCrossingThreshold;
+    private ArrayList<Float> sampleHistory = new ArrayList<Float> ();
+    //-----------------------------------------------------------------------------------^^^
+    
     private void statisticsInit() {
         f0_period_count = 0;
         f1_period_count = 0;
@@ -91,6 +133,23 @@ public class ZeroCrossingDemodulator
 
     public ZeroCrossingDemodulator(int sample_rate, int filter_length, int emphasis, PacketHandler h) throws Exception {
         super(sample_rate == 8000 ? 16000 : sample_rate);
+    	
+        this.sample_rate = sample_rate;
+        this.samplesPerBit = (float) sample_rate / 1200.0f;
+        
+        sampleAverage = 0;
+        samplesPer1200ZeroXing = samplesPerBit/4.0f;
+        samplesPer2200ZeroXing = (float) sample_rate /2200.0f/4.0f;
+        samplesSinceLastXing = 0;
+        //minValueInHistory = 0;
+        //maxValueInHistory = 0;
+        samplesSinceLastRecalc = 0;
+        sampleHistoryLength = (int)(Math.round(samplesPerBit)) * BIT_PERIODS_IN_HISTORY;
+        sampleLength = samplesPer2200ZeroXing / 2;
+    	
+    	
+        //End of new constructor code
+    	
 
         if (sample_rate == 8000) {
             interpolate = true;
@@ -108,15 +167,8 @@ public class ZeroCrossingDemodulator
         }
 
         handler = h;
-        this.sample_rate = sample_rate;
-        this.samples_per_bit = (float) sample_rate / 1200.0f;
         
-        samples_per_1200_zCrossing = samples_per_bit/4.0f;
-        samples_per_2200_zCrossing = (float) sample_rate /2200.0f/4.0f;
-        
-        
-        
-        System.err.printf("samples per bit = %.3f\n", this.samples_per_bit);
+        System.err.printf("samples per bit = %.3f\n", this.samplesPerBit);
 
         float[][][] tdf;
         switch (emphasis) {
@@ -140,6 +192,7 @@ public class ZeroCrossingDemodulator
                 break;
             }
         }
+        
         if (filter_index == tdf.length) {
             filter_index = tdf.length - 1;
             System.err.printf("Filter length %d not supported, using length %d\n",
@@ -150,37 +203,23 @@ public class ZeroCrossingDemodulator
         td_filter = tdf[filter_index][rate_index];
         cd_filter = Afsk1200Filters.corr_diff_filter[filter_index][rate_index];
 
-
         x = new float[td_filter.length];
         u1 = new float[td_filter.length];
 
-        c0_real = new float[(int) Math.floor(samples_per_bit)];
-        c0_imag = new float[(int) Math.floor(samples_per_bit)];
-        c1_real = new float[(int) Math.floor(samples_per_bit)];
-        c1_imag = new float[(int) Math.floor(samples_per_bit)];
+        c0_real = new float[(int) Math.floor(samplesPerBit)];
+        c0_imag = new float[(int) Math.floor(samplesPerBit)];
+        c1_real = new float[(int) Math.floor(samplesPerBit)];
+        c1_imag = new float[(int) Math.floor(samplesPerBit)];
 
         diff = new float[cd_filter.length];
 
         phase_inc_f0 = (float) (2.0 * Math.PI * 1200.0 / sample_rate);
         phase_inc_f1 = (float) (2.0 * Math.PI * 2200.0 / sample_rate);
-        phase_inc_symbol = (float) (2.0 * Math.PI * 1200.0 / sample_rate);
     }
     private volatile boolean data_carrier = false;
 
     public boolean dcd() {
         return data_carrier;
-    }
-
-    private float correlation(float[] x, float[] y, int j) {
-        float c = (float) 0.0;
-        for (int i = 0; i < x.length; i++) {
-            c += x[j] * y[j];
-            j--;
-            if (j == -1) {
-                j = x.length - 1;
-            }
-        }
-        return c;
     }
 
     private float sum(float[] x, int j) {
@@ -194,133 +233,96 @@ public class ZeroCrossingDemodulator
         }
         return c;
     }
-    private int j_td;   // time domain index 
-    private int j_cd;   // time domain index 
-    private int j_corr; // correlation index 
-    private float phase_f0, phase_f1;
-    private int t; // running sample counter
-    private float f1cos, f1sin, f0cos, f0sin;
-    private int flag_count = 0;
-    private boolean flag_separator_seen = false; // to process the single-bit separation period between flags
-    private int decode_count = 0;
-    private boolean vox_state = false;
-    
-    private ArrayList<Float> samples = new ArrayList<Float> ();
-    
-    private int number_of_samples_since_zero_crossing;
-    
-    boolean is_1200_last_seen = false;
-    
-    private enum Freq {
-		f_1200,
-		f_2200;
-    };
-    
-    private Freq last_freq_seen;
 
     protected void addSamplesPrivate(float[] s, int n) {
-       
     	
-    	int distance = 0;
-    	
-    	Freq freq;
-    		
-    	for(int i = 0 ;i<s.length; i++) {
+    	for (int i = 0; i < s.length; i ++) {
+    		samplesSinceLastRecalc++;
+    		samplesSinceLastXing++;
     		samples.add(s[i]);
-    		//calculate zero crossing distance in samples
-    		distance = 0;
-    		
-    		if(distance > samples_per_1200_zCrossing) { //round down slightly
-    			freq = Freq.f_1200;
+    		sampleHistory.add(s[i]);
+    		//If we have enough data, go ahead
+    		if (sampleHistory.size() > sampleHistoryLength){
+    			//Take the first entry out (we added the most recent one to the end;
+    			samples.remove(0);
+    			sampleHistory.remove(0);
     			
-    		} else {
-    			freq = Freq.f_2200;
-    		}
-    		
-    		if(freq != last_freq_seen) {
+    			if (samplesSinceLastRecalc > SAMPLES_BETWEEN_HISTORY_STATS_RECALC){
+    				historyStatisticsRecalculation();
+    			}
     			
+    			if (isSamplesIncreasing()){
+    				if(samples.get(samples.size() - 1) > averageValueInHistory + zeroCrossingThreshold) {
+    					//Its going high!
+    					handleZeroCrossing();
+    				}
+    			}
+    			else {
+    				if(samples.get(samples.size() - 1) < averageValueInHistory - zeroCrossingThreshold) {
+    					//Its going low!!
+    					handleZeroCrossing();
+    				}
+    				
+    			}
     		}
-    		
-    		
+    		//Otherwise, just start collecting data into the arrays
+    		else {
+    			//If we already have enough samples start picking them off from the front.
+    			if (samples.size() > sampleLength){
+    				samples.remove(0);
+    			}
+    		}
     	}
+    }
     	
-    	
-    	int i = 0;
-        while (i < n) {
-            float sample;
-            if (interpolate) {
-                if (interpolate_original) {
-                    sample = s[i];
-                    interpolate_last = sample;
-                    interpolate_original = false;
-                    i++;
-                } else {
-                    sample = 0.5f * (s[i] + interpolate_last);
-                    interpolate_original = true;
-                }
-            } else {
-                sample = s[i];
-                i++;
-            }
+    
+    private void handleZeroCrossing() {
+    	int distance = 0;
 
-            u1[j_td] = sample;
-            x[j_td] = Filter.filter(u1, j_td, td_filter);
+    	Freq freq;
 
-            c0_real[j_corr] = x[j_td] * (float) Math.cos(phase_f0);
-            c0_imag[j_corr] = x[j_td] * (float) Math.sin(phase_f0);
-
-            c1_real[j_corr] = x[j_td] * (float) Math.cos(phase_f1);
-            c1_imag[j_corr] = x[j_td] * (float) Math.sin(phase_f1);
-
-            phase_f0 += phase_inc_f0;
-            if (phase_f0 > (float) 2.0 * Math.PI) {
-                phase_f0 -= (float) 2.0 * Math.PI;
-            }
-            phase_f1 += phase_inc_f1;
-            if (phase_f1 > (float) 2.0 * Math.PI) {
-                phase_f1 -= (float) 2.0 * Math.PI;
-            }
-
-            float cr = sum(c0_real, j_corr);
-            float ci = sum(c0_imag, j_corr);
-            float c0 = (float) Math.sqrt(cr * cr + ci * ci);
-
-            cr = sum(c1_real, j_corr);
-            ci = sum(c1_imag, j_corr);
-            float c1 = (float) Math.sqrt(cr * cr + ci * ci);
-
-            diff[j_cd] = c0 - c1;
-            float fdiff = Filter.filter(diff, j_cd, cd_filter);
-
-            if (previous_fdiff * fdiff < 0 || previous_fdiff == 0) {
+    	//The last zero crossing is semi-recently then lets change to the processing stage...
+    	if (samplesSinceLastXing > (samplesPer1200ZeroXing + SAMPLE_BUFFER_AMOUNT)) {
+    		state = State.JUST_SEEN_FLAG;
+    	}
+    	else {
+    		//Presumably we are in the decoding phase...
+	    	if(samplesSinceLastXing > (samplesPer1200ZeroXing - SAMPLE_BUFFER_AMOUNT)) { //round down slightly
+	    		freq = Freq.f_1200;
+	    	} else {
+	    		freq = Freq.f_2200;
+	    	}
+	
+	    	//transition!
+	    	if(freq != lastFrequencySeen) {
 
                 // we found a transition
                 int p = t - last_transition;
                 last_transition = t;
 
-                int bits = (int) Math.round((double) p / (double) samples_per_bit);
+                int bits = (int) Math.round((double) p / (double) samplesPerBit);
 
                 // collect statistics
-                if (fdiff < 0) { // last period was high, meaning f0
+                if (lastFrequencySeen == Freq.f_1200) { // last period was high, meaning f0
                     f0_period_count++;
                     f0_max += f0_current_max;
-                    double err = Math.abs(bits - ((double) p / (double) samples_per_bit));
+                    double err = Math.abs(bits - ((double) p / (double) samplesPerBit));
                     if (err > max_period_error) {
                         max_period_error = (float) err;
                     }
 
                     // prepare for the period just starting now
-                    f1_current_min = fdiff;
+                    //WHAT TO DO WITH FDIFF?? f1_current_min = fdiff;
                 } else {
                     f1_period_count++;
                     f1_min += f1_current_min;
-                    double err = Math.abs(bits - ((double) p / (double) samples_per_bit));
+                    double err = Math.abs(bits - ((double) p / (double) samplesPerBit));
                     if (err > max_period_error) {
                         max_period_error = (float) err;
                     }
 
                     // prepare for the period just starting now
-                    f0_current_max = fdiff;
+                    //WHAT TO DO WITH FDIFF? f0_current_max = fdiff;
                 }
 
                 if (bits == 0 || bits > 7) {
@@ -417,27 +419,41 @@ public class ZeroCrossingDemodulator
                         }
                     }
                 }
-            }
-
-            previous_fdiff = fdiff;
-
-            t++;
-
-            j_td++;
-            if (j_td == td_filter.length) {
-                j_td = 0;
-            }
-
-            j_cd++;
-            if (j_cd == cd_filter.length) {
-                j_cd = 0;
-            }
-
-            j_corr++;
-            if (j_corr == c0_real.length /* samples_per_bit*/) {
-                j_corr = 0;
-            }
-
-        }
+	
+	    	}
+	    	lastFrequencySeen = freq;
+    	}
     }
+    
+    private void historyStatisticsRecalculation() {
+    	samplesSinceLastRecalc = 0;
+    	float max = -100, min = 100, sum = 0;
+    	for (int i = 0; i < sampleHistory.size(); i ++) {
+    		if (sampleHistory.get(i) < min) {
+    			min = sampleHistory.get(i);
+    		}
+    		if (sampleHistory.get(i) > max) {
+    			max = sampleHistory.size();
+    		}
+    		sum += sampleHistory.get(i);
+    	}
+    	//minValueInHistory = min;
+    	//maxValueInHistory = max;
+    	averageValueInHistory = sum / sampleHistory.size();
+    	zeroCrossingThreshold = ((Math.abs(max) + Math.abs(min)) / 2.0f) * ZERO_CROSSING_THRESHOLD_PERCENTAGE;
+	}
+
+	private boolean isSamplesIncreasing() {
+		float sum = samples.get(0);
+		boolean isIncreasing = true;
+		for (int i = 0; i < samples.size() - 1; i++){
+			if (samples.get(i) > (samples.get(i+1) + monotonicThreshold)){
+				isIncreasing = false;
+			}
+			sum += samples.get(i+1);
+		}
+		
+		sampleAverage = sum / samples.size();
+		return isIncreasing;
+	}
 }
