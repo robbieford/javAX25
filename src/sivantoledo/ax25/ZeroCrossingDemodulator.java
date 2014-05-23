@@ -312,7 +312,7 @@ public class ZeroCrossingDemodulator
     	//The last zero crossing is semi-recently then lets change to the processing stage...
     	if (samplesSinceLastXing < (samplesPer1200ZeroXing + SAMPLE_BUFFER_AMOUNT))  {
     		//Presumably we are in the decoding phase...
-	    	if(samplesSinceLastXing > (samplesPer1200ZeroXing - SAMPLE_BUFFER_AMOUNT)) { //round down slightly
+	    	if(samplesSinceLastXing > ((samplesPer2200ZeroXing + samplesPer1200ZeroXing)/2 - SAMPLE_BUFFER_AMOUNT)) { //round down slightly
 	    		freq = Freq.f_1200;
 	    	} else {
 	    		freq = Freq.f_2200;
