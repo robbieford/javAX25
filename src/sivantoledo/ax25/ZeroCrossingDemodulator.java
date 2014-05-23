@@ -96,6 +96,7 @@ public class ZeroCrossingDemodulator
     private float samplesPer1200ZeroXing;
     private float samplesPer2200ZeroXing;
     private int samplesSinceLastXing;
+    private int samplesSinceFreqTransition;
     
     private Freq lastFrequencySeen;
 
@@ -152,7 +153,8 @@ public class ZeroCrossingDemodulator
         sampleLength = samplesPer2200ZeroXing / 2;
         samplesReceived = 0;
         isSignalHigh = false;
-    	
+        samplesSinceFreqTransition = 0;
+        
         //End of new constructor code
     	
 
@@ -245,8 +247,9 @@ public class ZeroCrossingDemodulator
     		samplesSinceLastRecalc++;
     		samplesSinceLastXing++;
     		samplesReceived++;
+    		samplesSinceFreqTransition++;
     		
-    		if (DEBUG == 9) {
+    		if (DEBUG > 9) {
     			System.out.println("Sample number: " + samplesReceived + " /Value: " + s[i]);
     		}
     		
@@ -259,11 +262,11 @@ public class ZeroCrossingDemodulator
     			sampleHistory.remove(0);
     			
     			if (samplesSinceLastRecalc > SAMPLES_BETWEEN_HISTORY_STATS_RECALC){
-    				if (DEBUG == 8) {
+    				if (DEBUG > 8) {
     					System.out.println("Recalculating History...");
     				}
     				historyStatisticsRecalculation();
-    				if (DEBUG == 8) {
+    				if (DEBUG > 8) {
     					System.out.println("Average: " + averageValueInHistory + " zThreshold: " + zeroCrossingThreshold
     							+ " monotonicThreshold: " + monotonicThreshold);
     				}
@@ -273,7 +276,7 @@ public class ZeroCrossingDemodulator
     				if(!isSignalHigh && samples.get(samples.size() - 1) > averageValueInHistory + zeroCrossingThreshold) {
     					//Its going high!
     					isSignalHigh = true;
-    					if (DEBUG == 7) {
+    					if (DEBUG > 7) {
     						System.out.println("We had a zero crossing going HIGH at sample " + samplesReceived);
     					}
     					handleZeroCrossing();
@@ -283,7 +286,7 @@ public class ZeroCrossingDemodulator
     				if(isSignalHigh && samples.get(samples.size() - 1) < averageValueInHistory - zeroCrossingThreshold) {
     					//Its going low!!
     					isSignalHigh = false;
-    					if (DEBUG == 7) {
+    					if (DEBUG > 7) {
     						System.out.println("We had a zero crossing going LOW at sample " + samplesReceived);
     					}
     					handleZeroCrossing();
@@ -303,7 +306,6 @@ public class ZeroCrossingDemodulator
     	
     
     private void handleZeroCrossing() {
-    	int distance = 0;
 
     	Freq freq;
 
@@ -326,12 +328,10 @@ public class ZeroCrossingDemodulator
 	    		if (DEBUG > 0) {
 	    			System.out.println("We switched from " + lastFrequencySeen + " to: " + freq);
 	    		}
-                /** we found a transition
-                int p = t - last_transition;
-                last_transition = t;
 
-                int bits = (int) Math.round((double) p / (double) samplesPerBit);
+                int bits = (int) Math.round((double) samplesSinceFreqTransition / (double) samplesPerBit);
 
+                /**
                 // collect statistics
                 if (lastFrequencySeen == Freq.f_1200) { // last period was high, meaning f0
                     f0_period_count++;
@@ -353,7 +353,7 @@ public class ZeroCrossingDemodulator
 
                     // prepare for the period just starting now
                     //WHAT TO DO WITH FDIFF? f0_current_max = fdiff;
-                }
+                }*/
 
                 if (bits == 0 || bits > 7) {
                     state = State.WAITING;
@@ -448,8 +448,8 @@ public class ZeroCrossingDemodulator
                             }
                         }
                     }
-                }*/
-	
+                }
+                samplesSinceFreqTransition = 0;
 	    	}
 	    	lastFrequencySeen = freq;
     	}
