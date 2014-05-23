@@ -80,7 +80,7 @@ public class ZeroCrossingDemodulator
 
     //New Variables for Zero Crossing (migrate old ones here as we realize we need them
     //-----------------------------------------------------------------------------------vvv
-    private static final boolean DEBUG = true;
+    private static final int DEBUG = 1;
     //Structure Declarations
     private enum Freq {
 		f_1200,
@@ -90,6 +90,7 @@ public class ZeroCrossingDemodulator
     //Variables
     private long samplesReceived;
     private float samplesPerBit;
+    private boolean isSignalHigh;
 
     private static final float SAMPLE_BUFFER_AMOUNT = 2;
     private float samplesPer1200ZeroXing;
@@ -141,8 +142,8 @@ public class ZeroCrossingDemodulator
         this.samplesPerBit = (float) sample_rate / 1200.0f;
         
         sampleAverage = 0;
-        samplesPer1200ZeroXing = samplesPerBit/4.0f;
-        samplesPer2200ZeroXing = (float) sample_rate /2200.0f/4.0f;
+        samplesPer1200ZeroXing = samplesPerBit/2.0f;
+        samplesPer2200ZeroXing = (float) sample_rate /2200.0f/2.0f;
         samplesSinceLastXing = 0;
         //minValueInHistory = 0;
         //maxValueInHistory = 0;
@@ -150,6 +151,7 @@ public class ZeroCrossingDemodulator
         sampleHistoryLength = (int)(Math.round(samplesPerBit)) * BIT_PERIODS_IN_HISTORY;
         sampleLength = samplesPer2200ZeroXing / 2;
         samplesReceived = 0;
+        isSignalHigh = false;
     	
         //End of new constructor code
     	
@@ -244,8 +246,8 @@ public class ZeroCrossingDemodulator
     		samplesSinceLastXing++;
     		samplesReceived++;
     		
-    		if (DEBUG) {
-    			System.out.println("Processing Sample number: " + samplesReceived + " With Value: " + s[i]);
+    		if (DEBUG == 9) {
+    			System.out.println("Sample number: " + samplesReceived + " /Value: " + s[i]);
     		}
     		
     		samples.add(s[i]);
@@ -257,29 +259,31 @@ public class ZeroCrossingDemodulator
     			sampleHistory.remove(0);
     			
     			if (samplesSinceLastRecalc > SAMPLES_BETWEEN_HISTORY_STATS_RECALC){
-    				if (DEBUG) {
+    				if (DEBUG == 8) {
     					System.out.println("Recalculating History...");
     				}
     				historyStatisticsRecalculation();
-    				if (DEBUG) {
+    				if (DEBUG == 8) {
     					System.out.println("Average: " + averageValueInHistory + " zThreshold: " + zeroCrossingThreshold
     							+ " monotonicThreshold: " + monotonicThreshold);
     				}
     			}
     			
     			if (isSamplesIncreasing()){
-    				if(samples.get(samples.size() - 1) > averageValueInHistory + zeroCrossingThreshold) {
+    				if(!isSignalHigh && samples.get(samples.size() - 1) > averageValueInHistory + zeroCrossingThreshold) {
     					//Its going high!
-    					if (DEBUG) {
+    					isSignalHigh = true;
+    					if (DEBUG == 7) {
     						System.out.println("We had a zero crossing going HIGH at sample " + samplesReceived);
     					}
     					handleZeroCrossing();
     				}
     			}
     			else {
-    				if(samples.get(samples.size() - 1) < averageValueInHistory - zeroCrossingThreshold) {
+    				if(isSignalHigh && samples.get(samples.size() - 1) < averageValueInHistory - zeroCrossingThreshold) {
     					//Its going low!!
-    					if (DEBUG) {
+    					isSignalHigh = false;
+    					if (DEBUG == 7) {
     						System.out.println("We had a zero crossing going LOW at sample " + samplesReceived);
     					}
     					handleZeroCrossing();
@@ -299,7 +303,7 @@ public class ZeroCrossingDemodulator
     	
     
     private void handleZeroCrossing() {
-    	/**int distance = 0;
+    	int distance = 0;
 
     	Freq freq;
 
@@ -311,11 +315,18 @@ public class ZeroCrossingDemodulator
 	    	} else {
 	    		freq = Freq.f_2200;
 	    	}
+
+    		if (DEBUG > 0) {
+    			System.out.println("Frequency is:" + freq);
+    		}
 	
 	    	//transition!
 	    	if(freq != lastFrequencySeen) {
 
-                // we found a transition
+	    		if (DEBUG > 0) {
+	    			System.out.println("We switched from " + lastFrequencySeen + " to: " + freq);
+	    		}
+                /** we found a transition
                 int p = t - last_transition;
                 last_transition = t;
 
@@ -437,11 +448,12 @@ public class ZeroCrossingDemodulator
                             }
                         }
                     }
-                }
+                }*/
 	
 	    	}
 	    	lastFrequencySeen = freq;
-    	}*/
+    	}
+    	samplesSinceLastXing = 0;
     }
     
     private void historyStatisticsRecalculation() {
@@ -452,7 +464,7 @@ public class ZeroCrossingDemodulator
     			min = sampleHistory.get(i);
     		}
     		if (sampleHistory.get(i) > max) {
-    			max = sampleHistory.size();
+    			max = sampleHistory.get(i);
     		}
     		sum += sampleHistory.get(i);
     	}
