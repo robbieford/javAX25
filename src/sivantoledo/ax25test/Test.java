@@ -38,13 +38,15 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-import sivantoledo.ax25.Afsk1200Demodulator;
 import sivantoledo.ax25.Afsk1200Modulator;
+import sivantoledo.ax25.Afsk1200MultiDemodulator;
 import sivantoledo.ax25.Arrays;
 import sivantoledo.ax25.Packet;
 import sivantoledo.ax25.PacketDemodulator;
 import sivantoledo.ax25.PacketHandler;
+import sivantoledo.ax25.StrictZeroCrossingDemodulator;
 import sivantoledo.ax25.ZeroCrossingDemodulator;
+import sivantoledo.ax25.Afsk1200Demodulator;
 import sivantoledo.radiocontrol.SerialTransmitController;
 import sivantoledo.radiocontrol.TransmitController;
 import sivantoledo.sampledsound.Soundcard;
@@ -185,7 +187,8 @@ public class Test implements PacketHandler {
 //		  afsk6 = new Afsk1200Demodulator(rate,filter_length,6,t);
 //		  multi = new Afsk1200Demodulator(rate,filter_length,3,t);
 //		  multi = new Afsk1200MultiDemodulator(rate,t);
-			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
+//			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
+			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
 		  mod = new Afsk1200Modulator(rate);
 		} catch (Exception e) {
 			System.out.println("Exception trying to create an Afsk1200 object: "+e.getMessage());

@@ -21,7 +21,7 @@ package sivantoledo.ax25;
 
 import java.util.ArrayList;
 
-public class ZeroCrossingDemodulator
+public class StrictZeroCrossingDemodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
 {
 
@@ -80,7 +80,7 @@ public class ZeroCrossingDemodulator
 
     //New Variables for Zero Crossing (migrate old ones here as we realize we need them
     //-----------------------------------------------------------------------------------vvv
-    private static final int DEBUG = 2;
+    private static final int DEBUG = 0;
     //Structure Declarations
     private enum Freq {
 		f_1200,
@@ -97,6 +97,7 @@ public class ZeroCrossingDemodulator
     private float samplesPer2200ZeroXing;
     private int samplesSinceLastXing;
     private int samplesSinceFreqTransition;
+    private int minimumZeroXingSamples;
     
     private Freq lastFrequencySeen;
 
@@ -105,7 +106,7 @@ public class ZeroCrossingDemodulator
     private int samplesSinceLastFreqChange;
     private float sampleAverage;
     
-    private static final int SAMPLES_BETWEEN_HISTORY_STATS_RECALC = 5;
+    /*private static final int SAMPLES_BETWEEN_HISTORY_STATS_RECALC = 5;
     private static final int BIT_PERIODS_IN_HISTORY = 2;
     private int sampleHistoryLength;
     private int samplesSinceLastRecalc;
@@ -116,7 +117,12 @@ public class ZeroCrossingDemodulator
 	private static final float MONOTONIC_THRESHOLD_PERCENTAGE = 0.05f;
     private float averageValueInHistory;
     private float zeroCrossingThreshold;
-    private ArrayList<Float> sampleHistory = new ArrayList<Float> ();
+    private ArrayList<Float> sampleHistory = new ArrayList<Float> ();*/
+    
+    private int sampleHistoryLength;
+    private float previousSample;
+    private boolean foundFirstZeroCrossing = false;
+    
     //-----------------------------------------------------------------------------------^^^
     
     private void statisticsInit() {
@@ -132,11 +138,11 @@ public class ZeroCrossingDemodulator
         f1_min = f1_min / f1_period_count;
     }
 
-    public ZeroCrossingDemodulator(int sample_rate, int filter_length) throws Exception {
+    public StrictZeroCrossingDemodulator(int sample_rate, int filter_length) throws Exception {
         this(sample_rate, filter_length, 6, null);
     }
 
-    public ZeroCrossingDemodulator(int sample_rate, int filter_length, int emphasis, PacketHandler h) throws Exception {
+    public StrictZeroCrossingDemodulator(int sample_rate, int filter_length, int emphasis, PacketHandler h) throws Exception {
         super(sample_rate == 8000 ? 16000 : sample_rate);
     	
         this.sample_rate = sample_rate;
@@ -148,8 +154,9 @@ public class ZeroCrossingDemodulator
         samplesSinceLastXing = 0;
         //minValueInHistory = 0;
         //maxValueInHistory = 0;
-        samplesSinceLastRecalc = 0;
-        sampleHistoryLength = (int)(Math.round(samplesPerBit)) * BIT_PERIODS_IN_HISTORY;
+        minimumZeroXingSamples = (int) (samplesPer2200ZeroXing - 1);
+        previousSample = 0;
+//        sampleHistoryLength = (int)(Math.round(samplesPerBit)) * BIT_PERIODS_IN_HISTORY;
         sampleLength = samplesPer2200ZeroXing / 2;
         samplesReceived = 0;
         isSignalHigh = false;
@@ -240,67 +247,46 @@ public class ZeroCrossingDemodulator
         }
         return c;
     }
+    
+    protected boolean isZeroCrossing(float firstSample, float secondSample) {
+    	return ((firstSample <= 0 && secondSample > 0) || //Going from below zero to above OR
+		(firstSample >= 0 && secondSample < 0)) ;			// Going from above zer to below
+    }
 
     protected void addSamplesPrivate(float[] s, int n) {
     	
+    	float sample;
+    	
     	for (int i = 0; i < s.length; i ++) {
-    		samplesSinceLastRecalc++;
+    		
     		samplesSinceLastXing++;
     		samplesReceived++;
     		samplesSinceFreqTransition++;
+    		
+    		sample = s[i];
     		
     		if (DEBUG > 9) {
     			System.out.println("Sample number: " + samplesReceived + " /Value: " + s[i]);
     		}
     		
-    		samples.add(s[i]);
-    		sampleHistory.add(s[i]);
-    		//If we have enough data, go ahead
-    		if (sampleHistory.size() > sampleHistoryLength){
-    			//Take the first entry out (we added the most recent one to the end;
-    			samples.remove(0);
-    			sampleHistory.remove(0);
-    			
-    			if (samplesSinceLastRecalc > SAMPLES_BETWEEN_HISTORY_STATS_RECALC){
-    				if (DEBUG > 8) {
-    					System.out.println("Recalculating History...");
-    				}
-    				historyStatisticsRecalculation();
-    				if (DEBUG > 8) {
-    					System.out.println("Average: " + averageValueInHistory + " zThreshold: " + zeroCrossingThreshold
-    							+ " monotonicThreshold: " + monotonicThreshold);
-    				}
-    			}
-    			
-//    			if (isSamplesIncreasing()){
-    				if(!isSignalHigh && samples.get(samples.size() - 1) > averageValueInHistory + zeroCrossingThreshold) {
-    					//Its going high!
-    					isSignalHigh = true;
-    					if (DEBUG > 7) {
-    						System.out.println("We had a zero crossing going HIGH at sample " + samplesReceived);
-    					}
-    					handleZeroCrossing();
-    				}
-//    			}
-//    			else {
-    				if(isSignalHigh && samples.get(samples.size() - 1) < averageValueInHistory - zeroCrossingThreshold) {
-    					//Its going low!!
-    					isSignalHigh = false;
-    					if (DEBUG > 7) {
-    						System.out.println("We had a zero crossing going LOW at sample " + samplesReceived);
-    					}
-    					handleZeroCrossing();
-    				}
-    				
-//    			}
-    		}
-    		//Otherwise, just start collecting data into the arrays
-    		else {
-    			//If we already have enough samples start picking them off from the front.
-    			if (samples.size() > sampleLength){
-    				samples.remove(0);
+    		if(foundFirstZeroCrossing) {
+    			if(samplesSinceLastXing >= minimumZeroXingSamples ) {
+        			
+        			if(isZeroCrossing(previousSample, sample))
+        			{
+        				handleZeroCrossing();
+        				samplesSinceLastXing = 0;
+            		} 
+        		}
+    		} else {
+    			if(isZeroCrossing(previousSample, sample)) {
+    				foundFirstZeroCrossing = true;
+    				samplesSinceLastXing = 0;
     			}
     		}
+
+    		previousSample = sample;
+    		
     	}
     }
     	
@@ -463,36 +449,4 @@ public class ZeroCrossingDemodulator
     	samplesSinceLastXing = 0;
     }
     
-    private void historyStatisticsRecalculation() {
-    	samplesSinceLastRecalc = 0;
-    	float max = -100, min = 100, sum = 0;
-    	for (int i = 0; i < sampleHistory.size(); i ++) {
-    		if (sampleHistory.get(i) < min) {
-    			min = sampleHistory.get(i);
-    		}
-    		if (sampleHistory.get(i) > max) {
-    			max = sampleHistory.get(i);
-    		}
-    		sum += sampleHistory.get(i);
-    	}
-    	//minValueInHistory = min;
-    	//maxValueInHistory = max;
-    	averageValueInHistory = sum / sampleHistory.size();
-    	zeroCrossingThreshold = ((Math.abs(max) + Math.abs(min)) / 2.0f) * ZERO_CROSSING_THRESHOLD_PERCENTAGE;
-    	monotonicThreshold = ((Math.abs(max) + Math.abs(min)) / 2.0f) * MONOTONIC_THRESHOLD_PERCENTAGE;
-	}
-
-	private boolean isSamplesIncreasing() {
-		float sum = samples.get(0);
-		boolean isIncreasing = true;
-		for (int i = 0; i < samples.size() - 1; i++){
-			if (samples.get(i) > (samples.get(i+1) + monotonicThreshold)){
-				isIncreasing = false;
-			}
-			sum += samples.get(i+1);
-		}
-		
-		sampleAverage = sum / samples.size();
-		return isIncreasing;
-	}
 }
