@@ -80,7 +80,7 @@ public class StrictZeroCrossingDemodulator
 
     //New Variables for Zero Crossing (migrate old ones here as we realize we need them
     //-----------------------------------------------------------------------------------vvv
-    private static final int DEBUG = 0;
+    private static final int DEBUG = 2;
     //Structure Declarations
     private enum Freq {
 		f_1200,
