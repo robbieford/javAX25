@@ -92,7 +92,7 @@ public class StrictZeroCrossingDemodulator
     private float samplesPerBit;
     private boolean isSignalHigh;
 
-    private static final float SAMPLE_BUFFER_AMOUNT = 2;
+    private static final float SAMPLE_BUFFER_AMOUNT = 2.0f;
     private float samplesPer1200ZeroXing;
     private float samplesPer2200ZeroXing;
     private int samplesSinceLastXing;
@@ -121,6 +121,7 @@ public class StrictZeroCrossingDemodulator
     
     private int sampleHistoryLength;
     private float previousSample;
+    private float secPreviousSample;
     private boolean foundFirstZeroCrossing = false;
     
     //-----------------------------------------------------------------------------------^^^
@@ -156,6 +157,7 @@ public class StrictZeroCrossingDemodulator
         //maxValueInHistory = 0;
         minimumZeroXingSamples = (int) (samplesPer2200ZeroXing - 1);
         previousSample = 0;
+        secPreviousSample = 0;
 //        sampleHistoryLength = (int)(Math.round(samplesPerBit)) * BIT_PERIODS_IN_HISTORY;
         sampleLength = samplesPer2200ZeroXing / 2;
         samplesReceived = 0;
@@ -252,6 +254,14 @@ public class StrictZeroCrossingDemodulator
     	return ((firstSample <= 0 && secondSample > 0) || //Going from below zero to above OR
 		(firstSample >= 0 && secondSample < 0)) ;			// Going from above zer to below
     }
+    
+    protected boolean isBelowZero(float sample) {
+    	return sample <=0;
+    }
+    
+    protected boolean isAboveZero(float sample) {
+    	return sample >=0;
+    }
 
     protected void addSamplesPrivate(float[] s, int n) {
     	
@@ -263,7 +273,8 @@ public class StrictZeroCrossingDemodulator
     		samplesReceived++;
     		samplesSinceFreqTransition++;
     		
-    		sample = s[i];
+    		sample = (s[i] + previousSample + secPreviousSample)/3.0f;
+    		//sample = (s[i] + previousSample)/2.0f;// + secPreviousSample)/3.0f;
     		
     		if (DEBUG > 9) {
     			System.out.println("Sample number: " + samplesReceived + " /Value: " + s[i]);
@@ -272,19 +283,22 @@ public class StrictZeroCrossingDemodulator
     		if(foundFirstZeroCrossing) {
     			if(samplesSinceLastXing >= minimumZeroXingSamples ) {
         			
-        			if(isZeroCrossing(previousSample, sample))
+        			if((isSignalHigh && isBelowZero(sample)) || (!isSignalHigh && isAboveZero(sample)))
         			{
         				handleZeroCrossing();
         				samplesSinceLastXing = 0;
+        				isSignalHigh = !isSignalHigh;
             		} 
         		}
     		} else {
     			if(isZeroCrossing(previousSample, sample)) {
     				foundFirstZeroCrossing = true;
     				samplesSinceLastXing = 0;
+    				isSignalHigh = isAboveZero(sample);
     			}
     		}
 
+    		secPreviousSample = previousSample;
     		previousSample = sample;
     		
     	}
@@ -296,7 +310,7 @@ public class StrictZeroCrossingDemodulator
     	Freq freq;
 
     	//The last zero crossing is semi-recently then lets change to the processing stage...
-    	if (samplesSinceLastXing < (samplesPer1200ZeroXing + SAMPLE_BUFFER_AMOUNT))  {
+    	if (true)  {
     		//Presumably we are in the decoding phase...
 	    	if(samplesSinceLastXing > ((samplesPer2200ZeroXing + samplesPer1200ZeroXing)/2 - SAMPLE_BUFFER_AMOUNT)) { //round down slightly
 	    		freq = Freq.f_1200;
@@ -410,6 +424,7 @@ public class StrictZeroCrossingDemodulator
                                 if (bitcount == 8) {
                                     if (packet == null) {
                                         packet = new Packet();
+                                        if(DEBUG > 1) System.out.println("Created new Packet");
                                     }
 
                                     if (!packet.addByte((byte) data)) { //if the packet is too large
@@ -427,6 +442,7 @@ public class StrictZeroCrossingDemodulator
                                 if (bitcount == 8) {
                                     if (packet == null) {
                                         packet = new Packet();
+                                        if(DEBUG > 1) System.out.println("Created new Packet");
                                     }
                                     //if (data==0xAA) packet.terminate();
                                     if (!packet.addByte((byte) data)) {
