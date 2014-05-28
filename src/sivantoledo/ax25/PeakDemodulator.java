@@ -21,7 +21,7 @@ package sivantoledo.ax25;
 
 import java.util.ArrayList;
 
-public class StrictZeroCrossingDemodulator
+public class PeakDemodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
 {
 
@@ -90,13 +90,13 @@ public class StrictZeroCrossingDemodulator
     //Variables
     private long samplesReceived;
     private float samplesPerBit;
-    private boolean isSignalHigh;
+    private boolean isFirstPeak;
 
-    private static final float SAMPLE_BUFFER_AMOUNT = 2.0f;
-    private float samplesPer1200ZeroXing;
-    private float samplesPer2200ZeroXing;
-    private int samplesSinceLastXing;
-    private int samplesSinceFreqTransition;
+    private static final float SAMPLE_BUFFER_AMOUNT = 4.0f;
+    private float samplesPer1200Period;
+    private float samplesPer2200Period;
+    private int samplesSinceLastPeak;
+    private int samplesSinceTransition;
     private int minimumZeroXingSamples;
     
     private Freq lastFrequencySeen;
@@ -122,7 +122,19 @@ public class StrictZeroCrossingDemodulator
     private int sampleHistoryLength;
     private float previousSample;
     private float secPreviousSample;
-    private boolean foundFirstZeroCrossing = false;
+    private boolean isIncreasing = false;
+    private float localPeak;
+    private float localPeakSampleNum;
+    private float prevLocalPeakSampleNum;
+    private float prevSamplesBtPeaks;
+    
+    private enum Spacing {
+    	FREQUENCY, TRANSITION
+    };
+    
+    private Spacing prevSpacing;
+    
+    boolean isLastTran = true;
     
     //-----------------------------------------------------------------------------------^^^
     
@@ -139,30 +151,35 @@ public class StrictZeroCrossingDemodulator
         f1_min = f1_min / f1_period_count;
     }
 
-    public StrictZeroCrossingDemodulator(int sample_rate, int filter_length) throws Exception {
+    public PeakDemodulator(int sample_rate, int filter_length) throws Exception {
         this(sample_rate, filter_length, 6, null);
     }
 
-    public StrictZeroCrossingDemodulator(int sample_rate, int filter_length, int emphasis, PacketHandler h) throws Exception {
+    public PeakDemodulator(int sample_rate, int filter_length, int emphasis, PacketHandler h) throws Exception {
         super(sample_rate == 8000 ? 16000 : sample_rate);
     	
         this.sample_rate = sample_rate;
         this.samplesPerBit = (float) sample_rate / 1200.0f;
         
         sampleAverage = 0;
-        samplesPer1200ZeroXing = samplesPerBit/2.0f;
-        samplesPer2200ZeroXing = (float) sample_rate /2200.0f/2.0f;
-        samplesSinceLastXing = 0;
+        samplesPer1200Period = samplesPerBit;
+        samplesPer2200Period = (float) sample_rate /2200.0f;
+        samplesSinceLastPeak = 0;
         //minValueInHistory = 0;
         //maxValueInHistory = 0;
-        minimumZeroXingSamples = (int) (samplesPer2200ZeroXing - 1);
+        minimumZeroXingSamples = (int) (samplesPer2200Period - 1);
         previousSample = 0;
         secPreviousSample = 0;
 //        sampleHistoryLength = (int)(Math.round(samplesPerBit)) * BIT_PERIODS_IN_HISTORY;
-        sampleLength = samplesPer2200ZeroXing / 2;
+//        sampleLength = samplesPer2200ZeroXing / 2;
         samplesReceived = 0;
-        isSignalHigh = false;
-        samplesSinceFreqTransition = 0;
+        isFirstPeak = true;
+        samplesSinceTransition = 0;
+        localPeakSampleNum = 0;
+        localPeak = 0;
+        prevLocalPeakSampleNum = 0;
+        prevSamplesBtPeaks = 0;
+        prevSpacing = Spacing.FREQUENCY;
         
         //End of new constructor code
     	
@@ -269,50 +286,89 @@ public class StrictZeroCrossingDemodulator
     	
     	for (int i = 0; i < s.length; i ++) {
     		
-    		samplesSinceLastXing++;
+    		samplesSinceLastPeak++;
     		samplesReceived++;
-    		samplesSinceFreqTransition++;
+    		samplesSinceTransition++;
     		
-    		sample = (s[i] + previousSample + secPreviousSample)/3.0f;
+    		sample = Math.abs(s[i]);
+    		
+    		sample = (sample + previousSample + secPreviousSample)/3.0f;
     		//sample = (s[i] + previousSample)/2.0f;// + secPreviousSample)/3.0f;
     		
     		if (DEBUG > 9) {
     			System.out.println("Sample number: " + samplesReceived + " /Value: " + s[i]);
     		}
     		
-    		if(foundFirstZeroCrossing) {
-    			if(samplesSinceLastXing >= minimumZeroXingSamples ) {
-        			
-        			if((isSignalHigh && isBelowZero(sample)) || (!isSignalHigh && isAboveZero(sample)))
-        			{
-        				handleZeroCrossing();
-        				samplesSinceLastXing = 0;
-        				isSignalHigh = !isSignalHigh;
-            		} 
-        		}
+    		
+    		if(isIncreasing) {
+    			if(sample > localPeak) {
+    				localPeak = sample;
+    				localPeakSampleNum = samplesReceived;
+    			}
+    			if((sample < previousSample) && (previousSample < secPreviousSample)) {
+    				isIncreasing = false;
+    				
+    				if(DEBUG > 2) System.out.println("Local Peak at " + samplesReceived + " of " + localPeak + " Packets since last: " + samplesSinceLastPeak);
+    				
+    				handlePeakDetection();
+    				prevLocalPeakSampleNum = localPeakSampleNum;
+    				localPeak = -1000;
+    				localPeakSampleNum = 0;
+    				samplesSinceLastPeak=0;
+    			}
     		} else {
-    			if(isZeroCrossing(previousSample, sample)) {
-    				foundFirstZeroCrossing = true;
-    				samplesSinceLastXing = 0;
-    				isSignalHigh = isAboveZero(sample);
+    			if((sample > previousSample) && (previousSample > secPreviousSample)) {
+    				isIncreasing = true;
+    				localPeak = sample;
+    				localPeakSampleNum = samplesSinceLastPeak;
     			}
     		}
-
+    			
     		secPreviousSample = previousSample;
     		previousSample = sample;
     		
     	}
     }
     	
+    private Spacing getCurrentSpacing() {
+    	
+    	float samplesBtPeaks = localPeakSampleNum - prevLocalPeakSampleNum;
+    	
+    	if(samplesBtPeaks < samplesPer2200Period + SAMPLE_BUFFER_AMOUNT || 
+    			samplesBtPeaks > samplesPer1200Period - SAMPLE_BUFFER_AMOUNT	) {
+    		return Spacing.FREQUENCY;
+    	} else {
+    		return Spacing.TRANSITION;
+    	}
+    	
+    	
+    }
     
-    private void handleZeroCrossing() {
+    private void handlePeakDetection() {
 
     	Freq freq;
 
+    	
+    	
+    	/*if(isFirstPeak) {
+    		prevSamplesBtPeaks = samplesBtPeaks;
+    		isFirstPeak = false;
+    	}
+    	
+    	Spacing currentSpacing = getCurrentSpacing();
+    	
+    	if(currentSpacing == Spacing.TRANSITION) {
+    	*/
+    	
+    	float samplesBtPeaks = localPeakSampleNum - prevLocalPeakSampleNum;
+    	
+    	if(isLastTran) prevSamplesBtPeaks = samplesBtPeaks;
+    	
+    	float diff = Math.abs(samplesBtPeaks - prevSamplesBtPeaks);
+    	
     	//The last zero crossing is semi-recently then lets change to the processing stage...
-    	if (true)  {
-    		//Presumably we are in the decoding phase...
-	    	if(samplesSinceLastXing > ((samplesPer2200ZeroXing + samplesPer1200ZeroXing)/2 - SAMPLE_BUFFER_AMOUNT)) { //round down slightly
+		//Presumably we are in the decoding phase...
+	    	/*if(diff > ((samplesPer2200Period + samplesPer1200Period)/2 - SAMPLE_BUFFER_AMOUNT)) { //round down slightly
 	    		freq = Freq.f_1200;
 	    	} else {
 	    		freq = Freq.f_2200;
@@ -320,150 +376,139 @@ public class StrictZeroCrossingDemodulator
 
     		if (DEBUG > 2) {
     			System.out.println("Frequency is:" + freq);
-    		}
+    		}*/
 	
-	    	//transition!
-	    	if(freq != lastFrequencySeen) {
+    	float test = samplesPer2200Period + samplesPer1200Period;
+    	
+    	//transition!
+    	if(diff >= SAMPLE_BUFFER_AMOUNT){// && samplesSinceTransition > samplesPerBit/2.0f) {
 
-	    		int bits = (int) Math.round((double) samplesSinceFreqTransition / (double) samplesPerBit);
-	    		
-	    		if (DEBUG > 1) {
-	    			//System.out.println(samplesReceived + " " + bits + " -Switched Freq from " + lastFrequencySeen + " to: " + freq );
-	    			System.out.println(bits);
-	    		}
+    		isLastTran = true;
+    		
+    		int bits = (int) Math.round((double) samplesSinceTransition / (double) samplesPerBit);
+    		
+    		/*int bits = 0;
+    		if(prevSpacing == Spacing.FREQUENCY && currentSpacing == Spacing.TRANSITION) {
+    			bits = (int) Math.ceil((double) samplesSinceTransition / (double) samplesPerBit);
+    		} else {
+    			bits = (int) Math.round((double) samplesSinceTransition / (double) samplesPerBit);	
+    		}*/
+    		
+    		
+    		if (DEBUG > 1) {
+    			System.out.println(samplesReceived + " " + bits + " -Transition Occurred. Prev Tran occurred " + samplesSinceTransition + " diff: " + diff);
+    			//System.out.println(bits);
+    		}
+    		
+    		samplesSinceTransition = 0;
 
-                
+            if (bits == 0 || bits > 7) {
+                state = State.WAITING;
+                data_carrier = false;
+                flag_count = 0;
+            } else {
+                if (bits == 7) {
+                    flag_count++;
+                    flag_separator_seen = false;
 
-                /**
-                // collect statistics
-                if (lastFrequencySeen == Freq.f_1200) { // last period was high, meaning f0
-                    f0_period_count++;
-                    f0_max += f0_current_max;
-                    double err = Math.abs(bits - ((double) p / (double) samplesPerBit));
-                    if (err > max_period_error) {
-                        max_period_error = (float) err;
-                    }
+                    data = 0;
+                    bitcount = 0;
+                    switch (state) {
+                        case WAITING:
+                            state = State.JUST_SEEN_FLAG;
+                            data_carrier = true;
 
-                    // prepare for the period just starting now
-                    //WHAT TO DO WITH FDIFF?? f1_current_min = fdiff;
-                } else {
-                    f1_period_count++;
-                    f1_min += f1_current_min;
-                    double err = Math.abs(bits - ((double) p / (double) samplesPerBit));
-                    if (err > max_period_error) {
-                        max_period_error = (float) err;
-                    }
-
-                    // prepare for the period just starting now
-                    //WHAT TO DO WITH FDIFF? f0_current_max = fdiff;
-                }*/
-
-                if (bits == 0 || bits > 7) {
-                    state = State.WAITING;
-                    data_carrier = false;
-                    flag_count = 0;
-                } else {
-                    if (bits == 7) {
-                        flag_count++;
-                        flag_separator_seen = false;
-
-                        data = 0;
-                        bitcount = 0;
-                        switch (state) {
-                            case WAITING:
-                                state = State.JUST_SEEN_FLAG;
-                                data_carrier = true;
-
-                                statisticsInit(); // start measuring a new packet
-                                break;
-                            case JUST_SEEN_FLAG:
-                                break;
-                            case DECODING:
-                                if (packet != null && packet.terminate()) {
-                                    statisticsFinalize();
-                                    packet.statistics(new float[]{emphasis, f0_max / -f1_min, max_period_error});
-                                    
-                                    if (DEBUG > 0) {
-                            			System.out.println("Last Sample Count of Packet: " + samplesReceived);
-                            		}
-                                    
-                                    if (handler != null) {
-                                        handler.handlePacket(packet.bytesWithoutCRC());
-                                    } else {
-                                        System.out.println("" + (++decode_count) + ": " + packet);
-                                    }
-                                }
-                                packet = null;
-                                state = State.JUST_SEEN_FLAG;
-                                break;
-                        }
-                    } else {
-                        switch (state) {
-                            case WAITING:
-                                break;
-                            case JUST_SEEN_FLAG:
-                                state = State.DECODING;
-                                break;
-                            case DECODING:
-                                break;
-                        }
-                        if (state == State.DECODING) {
-                            if (bits != 1) {
-                                flag_count = 0;
-                            } else {
-                                if (flag_count > 0 && !flag_separator_seen) {
-                                    flag_separator_seen = true;
+                            statisticsInit(); // start measuring a new packet
+                            break;
+                        case JUST_SEEN_FLAG:
+                            break;
+                        case DECODING:
+                            if (packet != null && packet.terminate()) {
+                                statisticsFinalize();
+                                packet.statistics(new float[]{emphasis, f0_max / -f1_min, max_period_error});
+                                
+                                if (DEBUG > 0) {
+                        			System.out.println("Last Sample Count of Packet: " + samplesReceived);
+                        		}
+                                
+                                if (handler != null) {
+                                    handler.handlePacket(packet.bytesWithoutCRC());
                                 } else {
-                                    flag_count = 0;
+                                    System.out.println("" + (++decode_count) + ": " + packet);
                                 }
                             }
-
-                            for (int k = 0; k < bits - 1; k++) { //only loop when multiple bits have been seen
-                                bitcount++;
-                                data >>= 1;
-                                data += 128;
-                                if (bitcount == 8) {
-                                    if (packet == null) {
-                                        packet = new Packet();
-                                        if(DEBUG > 1) System.out.println("Created new Packet");
-                                    }
-
-                                    if (!packet.addByte((byte) data)) { //if the packet is too large
-                                        state = State.WAITING;
-                                        data_carrier = false;
-                                        System.err.println("Packet too Large. Throwing out");
-                                    }
-                                    data = 0;
-                                    bitcount = 0;
-                                }
+                            packet = null;
+                            state = State.JUST_SEEN_FLAG;
+                            break;
+                    }
+                } else {
+                    switch (state) {
+                        case WAITING:
+                            break;
+                        case JUST_SEEN_FLAG:
+                            state = State.DECODING;
+                            break;
+                        case DECODING:
+                            break;
+                    }
+                    if (state == State.DECODING) {
+                        if (bits != 1) {
+                            flag_count = 0;
+                        } else {
+                            if (flag_count > 0 && !flag_separator_seen) {
+                                flag_separator_seen = true;
+                            } else {
+                                flag_count = 0;
                             }
-                            if (bits - 1 != 5) { // the zero after the ones is not a stuffing
-                                bitcount++;
-                                data >>= 1;
-                                if (bitcount == 8) {
-                                    if (packet == null) {
-                                        packet = new Packet();
-                                        if(DEBUG > 1) System.out.println("Created new Packet");
-                                    }
-                                    //if (data==0xAA) packet.terminate();
-                                    if (!packet.addByte((byte) data)) {
-                                        state = State.WAITING;
-                                        data_carrier = false;
-                                        System.err.println("Packet too Large. Throwing out");
+                        }
 
-                                    }
-                                    data = 0;
-                                    bitcount = 0;
+                        for (int k = 0; k < bits - 1; k++) { //only loop when multiple bits have been seen
+                            bitcount++;
+                            data >>= 1;
+                            data += 128;
+                            if (bitcount == 8) {
+                                if (packet == null) {
+                                    packet = new Packet();
+                                    if(DEBUG > 1) System.out.println("Created new Packet");
                                 }
+
+                                if (!packet.addByte((byte) data)) { //if the packet is too large
+                                    state = State.WAITING;
+                                    data_carrier = false;
+                                    System.err.println("Packet too Large. Throwing out");
+                                }
+                                data = 0;
+                                bitcount = 0;
+                            }
+                        }
+                        if (bits - 1 != 5) { // the zero after the ones is not a stuffing
+                            bitcount++;
+                            data >>= 1;
+                            if (bitcount == 8) {
+                                if (packet == null) {
+                                    packet = new Packet();
+                                    if(DEBUG > 1) System.out.println("Created new Packet");
+                                }
+                                //if (data==0xAA) packet.terminate();
+                                if (!packet.addByte((byte) data)) {
+                                    state = State.WAITING;
+                                    data_carrier = false;
+                                    System.err.println("Packet too Large. Throwing out");
+
+                                }
+                                data = 0;
+                                bitcount = 0;
                             }
                         }
                     }
                 }
-                samplesSinceFreqTransition = 0;
-	    	}
-	    	lastFrequencySeen = freq;
+            }
+    	} else {
+    		isLastTran = false;
     	}
-    	samplesSinceLastXing = 0;
+    	samplesSinceLastPeak = 0;
+    	prevSamplesBtPeaks = samplesBtPeaks;
+    	//prevSpacing = currentSpacing;
     }
     
 }

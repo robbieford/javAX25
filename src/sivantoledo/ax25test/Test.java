@@ -44,6 +44,7 @@ import sivantoledo.ax25.Arrays;
 import sivantoledo.ax25.Packet;
 import sivantoledo.ax25.PacketDemodulator;
 import sivantoledo.ax25.PacketHandler;
+import sivantoledo.ax25.PeakDemodulator;
 import sivantoledo.ax25.StrictZeroCrossingDemodulator;
 import sivantoledo.ax25.ZeroCrossingDemodulator;
 import sivantoledo.ax25.Afsk1200Demodulator;
@@ -188,7 +189,8 @@ public class Test implements PacketHandler {
 //		  multi = new Afsk1200Demodulator(rate,filter_length,3,t);
 //		  multi = new Afsk1200MultiDemodulator(rate,t);
 //			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
-			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
+//			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
+			multi = new PeakDemodulator(rate,filter_length,3,t);
 		  mod = new Afsk1200Modulator(rate);
 		} catch (Exception e) {
 			System.out.println("Exception trying to create an Afsk1200 object: "+e.getMessage());
