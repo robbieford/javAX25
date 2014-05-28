@@ -69,7 +69,7 @@ public class WindowedZeroCrossingDemodulator
     private float samplesPerBit;
 
     private static final int _1200CrossingsInWindow = 2;
-    private static final float WINDOW_SIZE_IN_PERCENTAGE = 0.90f;
+    private static final float WINDOW_SIZE_IN_PERCENTAGE = 0.95f;
     private int samplesInWindow;
     private ArrayList<Float> window;
 	private int samplesSinceCrossingRecount;
@@ -106,13 +106,13 @@ public class WindowedZeroCrossingDemodulator
         this.samplesPerBit = (float) sample_rate / 1200.0f;
         
         samplesPer2200ZeroXing = (float) sample_rate /2200.0f/2.0f;
-        minimumZeroXingSamples = (int) (samplesPer2200ZeroXing - 1);
+        minimumZeroXingSamples = 4;
         samplesReceived = 0;
         samplesSinceFreqTransition = 0;
         //samplesInWindow = Math.round(sample_rate / 1200.0f) - 2;
         samplesInWindow = Math.round(samplesPerBit * WINDOW_SIZE_IN_PERCENTAGE);
         window = new ArrayList<Float>(samplesInWindow);
-        crossingRecountInterval = Math.round(samplesPer2200ZeroXing/2.0f);
+        crossingRecountInterval = 3;//Math.round(samplesPer2200ZeroXing/2.0f);
         
         //End of new constructor code
 
@@ -180,8 +180,10 @@ public class WindowedZeroCrossingDemodulator
     	return sample >=0;
     }
 
+    private int skips;
+    
     protected void addSamplesPrivate(float[] s, int n) {
-    	Freq freq;
+    	Freq freq = null;
     	
     	for (int i = 0; i < s.length; i ++) {
     		window.add(s[i]);
@@ -195,24 +197,29 @@ public class WindowedZeroCrossingDemodulator
     				int crossings = calculateCrossingsInWindow();
     				samplesSinceCrossingRecount = 0;
     				
-    				if (crossings <= _1200CrossingsInWindow){
+    				
+    				if (crossings == _1200CrossingsInWindow){
     					freq = Freq.f_1200;
-    				} else {
+    				} else if (crossings > _1200CrossingsInWindow) {
     					freq = Freq.f_2200;
+    				} else {
+    					//who knows?
     				}
     				
-    				if (lastFrequencySeen != freq){
+    				if (freq!= null && lastFrequencySeen != freq){
     					int bits = Math.round(samplesSinceFreqTransition / samplesPerBit);
+    					
     					if (bits > 0) {
+    						skips = 0;
     						if (DEBUG > 1) {
     							System.out.println("\t" + samplesReceived + " " + bits + " -Switched Freq from " + lastFrequencySeen);
     						}
     						handleFrequencyTransition(bits);
-    						samplesSinceFreqTransition = 0;
     						lastFrequencySeen = freq;
+    						samplesSinceFreqTransition = 0;
     					}
     					else {
-    						if (DEBUG > 0) System.out.println("\t\tGot 0 bits, wait for one more sample - " + samplesReceived);
+    						if (DEBUG > 2) System.out.println("\t\tGot 0 bits, wait for one more sample - " + samplesReceived);
     						samplesSinceCrossingRecount = crossingRecountInterval + 1;
     					}
     				}
@@ -229,14 +236,16 @@ public class WindowedZeroCrossingDemodulator
     	boolean isHigh = window.get(0) > 0;
     	
     	//Set this to something big
-    	int samplesSinceLastXing = Math.round(samplesPerBit);
+    	int samplesSinceLastXing = samplesInWindow;
     	
 		for (int i = 0; i < window.size(); i ++){
+			samplesSinceLastXing++;
 			if(samplesSinceLastXing >= minimumZeroXingSamples ) {
     			if((isHigh && isBelowZero(window.get(i))) || (!isHigh && isAboveZero(window.get(i))))
     			{
     				crossings++;
     				isHigh = !isHigh;
+    				samplesSinceLastXing = 0;
         		} 
     		}
 		}
@@ -311,7 +320,7 @@ public class WindowedZeroCrossingDemodulator
 					if (bitcount == 8) {
 						if (packet == null) {
 							packet = new Packet();
-							if(DEBUG > 1) System.out.println("Created new Packet");
+							if(DEBUG >= 1) System.out.println("Created new Packet at sample: " + samplesReceived);
 						}
 
 						if (!packet.addByte((byte) data)) { //if the packet is too large
