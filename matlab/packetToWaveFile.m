@@ -1,4 +1,4 @@
-function packetToWaveFile( file_name )
+function packetToWaveFile( file_name, samplerate )
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -6,7 +6,7 @@ function packetToWaveFile( file_name )
     
     output = strcat(file_name,'.wav');
     
-    wavwrite(data, 48000, output);
+    wavwrite(data, samplerate, output);
 
 
 end
