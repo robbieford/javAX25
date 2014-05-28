@@ -179,8 +179,6 @@ public class WindowedZeroCrossingDemodulator
     protected boolean isAboveZero(float sample) {
     	return sample >=0;
     }
-
-    private int skips;
     
     protected void addSamplesPrivate(float[] s, int n) {
     	Freq freq = null;
@@ -192,11 +190,10 @@ public class WindowedZeroCrossingDemodulator
     		samplesSinceCrossingRecount++;
 
     		//We have enough samples, so lets do this!
-    		if (window.size() == samplesInWindow){
+    		if (window.size() == samplesInWindow) {
     			if (samplesSinceCrossingRecount >  crossingRecountInterval){
     				int crossings = calculateCrossingsInWindow();
     				samplesSinceCrossingRecount = 0;
-    				
     				
     				if (crossings == _1200CrossingsInWindow){
     					freq = Freq.f_1200;
@@ -210,7 +207,6 @@ public class WindowedZeroCrossingDemodulator
     					int bits = Math.round(samplesSinceFreqTransition / samplesPerBit);
     					
     					if (bits > 0) {
-    						skips = 0;
     						if (DEBUG > 1) {
     							System.out.println("\t" + samplesReceived + " " + bits + " -Switched Freq from " + lastFrequencySeen);
     						}
