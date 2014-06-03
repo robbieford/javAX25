@@ -20,9 +20,6 @@
 package sivantoledo.ax25;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-
-import com.sun.org.apache.xalan.internal.utils.FeatureManager.Feature;
 
 public class PreClockingDemodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
@@ -314,8 +311,8 @@ public class PreClockingDemodulator
 		 * WE ARENT FILTERING ANYTHING!!!!!!! 
 		 * _______________________________________________________
 		 */
-		filteredSampleArray.add(sample);
-		//filteredSampleArray.add(filteredSample);
+		//filteredSampleArray.add(sample);
+		filteredSampleArray.add(filteredSample);
 		
 		//Look for flags in samples
 		boolean flagInSamples = containsFlag(filteredSample);
@@ -363,6 +360,7 @@ public class PreClockingDemodulator
 		for (int i = 0; i < frequencySymbolList.size(); i++) {
 			bauds++;
 			if (frequencySymbolList.get(i) != lastFreq) {
+				System.out.println(bauds);// + " " + i);
 				handleDemodulatedBits(bauds);
 				bauds = 0;
 				lastFreq = frequencySymbolList.get(i);
@@ -407,9 +405,11 @@ public class PreClockingDemodulator
 			sum += frequenciesFromDerivative.get(i);
 		}
 		
-		//Frequency freq = sum / (endIdx + 1 - startIdx) > 1850 ? Frequency.f_2200: Frequency.f_1200;
-		Frequency freq =  frequenciesFromDerivative.get((endIdx + startIdx) /2) > 1850 ? Frequency.f_2200: Frequency.f_1200;
-		//System.out.println(freq + " actual value: " + sum / (endIdx + 1 - startIdx) + " num of freqs in avg: " + (endIdx + 1 - startIdx));
+		Frequency freq = sum / (endIdx + 1 - startIdx) > 1800 ? Frequency.f_2200: Frequency.f_1200;
+		//Frequency freq =  frequenciesFromDerivative.get((endIdx + startIdx) /2) > 1850 ? Frequency.f_2200: Frequency.f_1200;
+		//System.out.println(freq + " actual value: " + frequenciesFromDerivative.get((endIdx + startIdx+1) /2)  + " num of freqs in avg: " + (endIdx + 1 - startIdx));
+		//System.out.println(frequenciesFromDerivative.get((endIdx + startIdx) /2));
+		System.out.println(sum / (endIdx + 1 - startIdx));
 		return freq;
 	}
 
@@ -460,11 +460,15 @@ public class PreClockingDemodulator
 	}
 
 	private ArrayList<Float> calulateZeroCrossings(ArrayList<Float> samples) {
+		float ZERO_CROSSING_THRESHOLD = 5f;
+		int sinceLastCrossing = Math.round(samplesPerBaud);
 		ArrayList<Float> crossingList = new ArrayList<Float>();
 		
 		for (int i = 1; i < samples.size(); i++) {
-			if (isZeroCrossing(samples.get(i-1), samples.get(i))){
+			sinceLastCrossing++;
+			if (sinceLastCrossing > ZERO_CROSSING_THRESHOLD && isZeroCrossing(samples.get(i-1), samples.get(i))){
 				crossingList.add(i - 1 + zeroCrossingPercentage(samples.get(i-1), samples.get(i)));
+				sinceLastCrossing = 0;
 			}
 		}
 		
