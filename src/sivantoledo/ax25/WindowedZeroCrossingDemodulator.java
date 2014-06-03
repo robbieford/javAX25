@@ -78,7 +78,8 @@ public class WindowedZeroCrossingDemodulator
     private int minimumZeroXingSamples;
     
     private Freq lastFrequencySeen;
-
+    ArrayList<Float> sampleArray;
+    float[] td_filter;
 	private float samplesPer2200ZeroXing;
     
     //-----------------------------------------------------------------------------------^^^
@@ -159,6 +160,12 @@ public class WindowedZeroCrossingDemodulator
                     filter_length,
                     tdf[filter_index][rate_index].length);
         }
+        
+        td_filter = tdf[filter_index][rate_index];
+        sampleArray = new ArrayList<Float>(td_filter.length);
+        for (int i= 0; i < td_filter.length; i++) {
+        	sampleArray.add(0.0f);
+        }
     }
     
     private volatile boolean data_carrier = false;
@@ -184,7 +191,12 @@ public class WindowedZeroCrossingDemodulator
     	Freq freq = null;
     	
     	for (int i = 0; i < s.length; i ++) {
+    		sampleArray.add(s[i]);
+    		float filteredSample = Filter.filter(sampleArray, td_filter);
+    		sampleArray.remove(0);
+    		
     		window.add(s[i]);
+    		
     		samplesReceived++;
     		samplesSinceFreqTransition++;
     		samplesSinceCrossingRecount++;
