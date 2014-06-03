@@ -20,6 +20,8 @@
 
 package sivantoledo.ax25;
 
+import java.util.ArrayList;
+
 public class Filter {
 	public final static float[] xxxLOWPASS_1200_48000_39 = {
 			1.230588e-004f,
@@ -159,6 +161,14 @@ public class Filter {
 			c += x[j]*f[i];
 			j--;
 			if (j==-1) j=x.length - 1;
+		}
+		return c;
+	}
+
+	public static float filter(ArrayList<Float> x, float[] f) {
+		float c = (float) 0.0;
+		for (int i=0; i<f.length; i++) {
+			c += x.get(i)*f[i];
 		}
 		return c;
 	}
