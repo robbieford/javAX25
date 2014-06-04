@@ -47,6 +47,8 @@ public class Afsk1200Demodulator
     private Packet packet; // received packet
     private PacketHandler handler;
 
+    private int noFlags = 1;
+    
     private static enum State {
 
         WAITING,
@@ -316,6 +318,8 @@ public class Afsk1200Demodulator
                     // prepare for the period just starting now
                     f0_current_max = fdiff;
                 }
+//                if(state == State.DECODING)
+//                	System.out.println(bits);
 
                 if (bits == 0 || bits > 7) {
                     state = State.WAITING;
@@ -323,6 +327,7 @@ public class Afsk1200Demodulator
                     flag_count = 0;
                 } else {
                     if (bits == 7) {
+//                    	System.err.println("Found Flag at sample: " + t +" Total: " + noFlags++);
                         flag_count++;
                         flag_separator_seen = false;
                         //System.out.printf("Seen %d flags in a row\n",flag_count);

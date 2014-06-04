@@ -45,6 +45,7 @@ import sivantoledo.ax25.Packet;
 import sivantoledo.ax25.PacketDemodulator;
 import sivantoledo.ax25.PacketHandler;
 import sivantoledo.ax25.PeakDemodulator;
+import sivantoledo.ax25.PreClockingDemodulator;
 import sivantoledo.ax25.StrictZeroCrossingDemodulator;
 //import sivantoledo.ax25.WindowedZeroCrossingDemodulator;
 import sivantoledo.ax25.ZeroCrossingDemodulator;
@@ -186,15 +187,17 @@ public class Test implements PacketHandler {
 		try {
 		  //afsk = new Afsk1200(rate,filter_length,0,t);
 //		  multi = new Afsk1200Demodulator(rate,filter_length,0,t);
+//		  multi = new Afsk1200Demodulator(rate,1,0,t);
 //		  afsk6 = new Afsk1200Demodulator(rate,filter_length,6,t);
 //		  multi = new Afsk1200Demodulator(rate,filter_length,3,t);
-//		  multi = new Afsk1200MultiDemodulator(rate,t);
+		  multi = new Afsk1200MultiDemodulator(rate,t);
 
 //			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
-			multi = new PeakDemodulator(rate,filter_length,3,t);
+//			multi = new PeakDemodulator(rate,filter_length,3,t);
 //			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
+//			multi = new PreClockingDemodulator(rate, 1,0,t);
 //			multi = new WindowedZeroCrossingDemodulator(rate, filter_length, 3, t);
 		  mod = new Afsk1200Modulator(rate);
 		} catch (Exception e) {
@@ -370,11 +373,16 @@ public class Test implements PacketHandler {
 						//afsk0.addSamples(f, 1);
 						//afsk6.addSamples(f, 1);
 						//if (f[0] > 32768.0f || f[0] < -32768.0f) System.out.printf("Weird short sample value %f\n", f[0]);
+						
+						if(t.getUniqPacketCount() > 1) {
+							int poo = 0;
+						}
+						
 						multi.addSamples(f, 1);
 						
 						k++;
 						if (k==rate) {
-							System.out.printf("peak level %d\n",multi.peak());
+							//System.out.printf("peak level %d\n",multi.peak());
 							k=0;
 						}
 					}

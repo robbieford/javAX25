@@ -323,7 +323,7 @@ public class PreClockingDemodulator
 				int bytesBetweenFlags =(int) ((filteredSampleArray.size() - samplesInFlag*2 - BUFFER_SAMPLES_AFTER_FLAG)/samplesPerBaud)/8;
 				
 				if(bytesBetweenFlags >= MINIMUM_PACKET_BYTES && bytesBetweenFlags <= MAXIMUM_PACKET_BYTES ) {
-					System.out.println("Number of Potential Packtes: " + ++numPotentialPackets + " with size: " + bytesBetweenFlags);
+//					System.out.println("Number of Potential Packtes: " + ++numPotentialPackets + " with size: " + bytesBetweenFlags);
 					processPacket();
 					shrinkFilteredSampleArray();
 				} else {
@@ -360,7 +360,8 @@ public class PreClockingDemodulator
 		for (int i = 0; i < frequencySymbolList.size(); i++) {
 			bauds++;
 			if (frequencySymbolList.get(i) != lastFreq) {
-				System.out.println(bauds);// + " " + i);
+//				System.out.println(bauds);// + " " + i);
+				//if(bauds == 8) bauds =7;
 				handleDemodulatedBits(bauds);
 				bauds = 0;
 				lastFreq = frequencySymbolList.get(i);
@@ -405,11 +406,11 @@ public class PreClockingDemodulator
 			sum += frequenciesFromDerivative.get(i);
 		}
 		
-		Frequency freq = sum / (endIdx + 1 - startIdx) > 1800 ? Frequency.f_2200: Frequency.f_1200;
+		Frequency freq = sum / (endIdx + 1 - startIdx) > 1700 ? Frequency.f_2200: Frequency.f_1200;
 		//Frequency freq =  frequenciesFromDerivative.get((endIdx + startIdx) /2) > 1850 ? Frequency.f_2200: Frequency.f_1200;
 		//System.out.println(freq + " actual value: " + frequenciesFromDerivative.get((endIdx + startIdx+1) /2)  + " num of freqs in avg: " + (endIdx + 1 - startIdx));
 		//System.out.println(frequenciesFromDerivative.get((endIdx + startIdx) /2));
-		System.out.println(sum / (endIdx + 1 - startIdx));
+//		System.out.println(sum / (endIdx + 1 - startIdx));
 		return freq;
 	}
 
@@ -500,7 +501,7 @@ public class PreClockingDemodulator
 	}
 	
 	private void shrinkFilteredSampleArray() {
-		filteredSampleArray = new ArrayList<Float> (filteredSampleArray.subList(filteredSampleArray.size() - 1 - samplesInFlag - BUFFER_SAMPLES_AFTER_FLAG,
+		filteredSampleArray = new ArrayList<Float> (filteredSampleArray.subList(filteredSampleArray.size() - 1 - samplesInFlag*2 - BUFFER_SAMPLES_AFTER_FLAG,
 				filteredSampleArray.size() - 1));
 	}
 	
@@ -677,7 +678,16 @@ public class PreClockingDemodulator
                     case JUST_SEEN_FLAG:
                         break;
                     case DECODING:
-                        if (packet != null && packet.terminate()) {
+                    	
+                    	if (packet != null) {
+                    		try {
+                    			System.out.println("+++++++" + packet.toString());
+                    		} catch (Exception e) {
+                    			
+                    		}
+                    	}
+                        
+                    	if (packet != null && packet.terminate()) {
                             statisticsFinalize();
                             packet.statistics(new float[]{emphasis, f0_max / -f1_min, max_period_error});
                             //System.out.print(String.format("%ddB:%.02f:%.02f\n", 
@@ -720,6 +730,7 @@ public class PreClockingDemodulator
                         if (bitcount == 8) {
                             if (packet == null) {
                                 packet = new Packet();
+                                System.out.println("New Packet");
                             }
                             //if (data==0xAA) packet.terminate();
 
