@@ -383,5 +383,24 @@ public class Packet {
 		}
 		builder.append("]");
 		return builder.toString();
-	}	
+	}
+	
+	public int compareTo(Packet a) {
+		
+		byte[] bBytes = this.bytesWithCRC();
+		byte[] aBytes = a.bytesWithCRC();
+		
+		if(aBytes.length != bBytes.length) {
+			return (bBytes.length < aBytes.length) ? -1 : 1;
+		} else {
+			for(int i = 0; i <aBytes.length; i++) {
+				if(bBytes[i] != aBytes[i]) {
+					return (bBytes[i] < aBytes[i]) ? -1 : 1;
+				}
+			}
+		}
+		
+		return 0;
+	}
+	
 }
