@@ -1,7 +1,7 @@
 /*
  * Audio FSK modem for AX25 (1200 Baud, 1200/2200Hz).
  * 
- * Copyright (C) Sivan Toledo, 2012
+ * Robert Campbell and Michael Harriman 2014 Adapted from S. Toledo
  * 
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
