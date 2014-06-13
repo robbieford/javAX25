@@ -73,6 +73,7 @@ public class PreClockingDemodulator
     private float f0_max, f1_min; // to collect average max, min in the filtered diff signal
     private float f0_current_max, f1_current_min;
     private float max_period_error;
+    float ZERO_CROSSING_THRESHOLD;
 
     private void statisticsInit() {
         f0_period_count = 0;
@@ -202,6 +203,9 @@ public class PreClockingDemodulator
         for (int i= 0; i < td_filter.length; i++) {
         	sampleArray.add(0.0f);
         }
+        
+        ZERO_CROSSING_THRESHOLD = sampleRate/2200.0f/4.0f;
+        
     }
     private volatile boolean data_carrier = false;
 
@@ -461,7 +465,7 @@ public class PreClockingDemodulator
 	}
 
 	private ArrayList<Float> calulateZeroCrossings(ArrayList<Float> samples) {
-		float ZERO_CROSSING_THRESHOLD = 5f;
+//		float ZERO_CROSSING_THRESHOLD = 5f;
 		int sinceLastCrossing = Math.round(samplesPerBaud);
 		ArrayList<Float> crossingList = new ArrayList<Float>();
 		
@@ -501,7 +505,9 @@ public class PreClockingDemodulator
 	}
 	
 	private void shrinkFilteredSampleArray() {
-		filteredSampleArray = new ArrayList<Float> (filteredSampleArray.subList(filteredSampleArray.size() - 1 - samplesInFlag*2 - BUFFER_SAMPLES_AFTER_FLAG,
+		int index = filteredSampleArray.size() - 1 - samplesInFlag*2 - BUFFER_SAMPLES_AFTER_FLAG;
+		if(index < 0 ) index = 0;
+		filteredSampleArray = new ArrayList<Float> (filteredSampleArray.subList(index,
 				filteredSampleArray.size() - 1));
 	}
 	

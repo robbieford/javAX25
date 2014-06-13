@@ -6,7 +6,7 @@ function [locs] = plot_points( file_name, plot_num )
     
     [y,FS,NBITS]=wavread(file_name);
     
-    y = abs(y);
+%     y = abs(y);
     
     v = zeros(1, length(y));
     
@@ -22,10 +22,13 @@ function [locs] = plot_points( file_name, plot_num )
     locs = detectPeaks(v);
     
     hold on;
-    plot(x2, y, 'r');%y(:,1));
-    plot(x2, zeros(1,length(x2)));
-    plot(x3, v, 'c');
-    for i=1 : length(locs)
-        line([locs(i) locs(i)],[0 v(locs(i))]);
-    end
+    plot(x2(10000:20000), y(10000:20000), 'b');%y(:,1));
+    xlabel('Points');
+    ylabel('Amplitude');
+    %plot(x2, zeros(1,length(x2)));
+    %plot(x3, v, 'c');
+%     for i=1 : length(locs)
+%         line([locs(i) locs(i)],[0 v(locs(i))]);
+%     end
+    %spectrogram(v);
 end

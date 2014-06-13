@@ -57,7 +57,7 @@ public class WindowedZeroCrossingDemodulator
 
     //New Variables for Zero Crossing (migrate old ones here as we realize we need them
     //-----------------------------------------------------------------------------------vvv
-    private static final int DEBUG = 0;
+    private static final int DEBUG = -1;
     //Structure Declarations
     private enum Freq {
 		f_1200,
@@ -222,7 +222,7 @@ public class WindowedZeroCrossingDemodulator
     						if (DEBUG > 1) {
     							System.out.println("\t" + samplesReceived + " " + bits + " -Switched Freq from " + lastFrequencySeen);
     						}
-    						System.out.println(bits + "     " + samplesReceived);
+//    						System.out.println(bits + "     " + samplesReceived);
     						handleFrequencyTransition(bits);
     						lastFrequencySeen = freq;
     						samplesSinceFreqTransition = 0;

@@ -23,7 +23,7 @@ package sivantoledo.ax25;
 
 //import java.util.Arrays;
 
-public class Afsk1200MultiDemodulator extends PacketDemodulator {
+public class Afsk1200MultiDemodulatorPlus extends PacketDemodulator {
 
 	private class InnerHandler implements PacketHandler {
 		int d;
@@ -31,7 +31,7 @@ public class Afsk1200MultiDemodulator extends PacketDemodulator {
 			d = demodulator;
 		}
 		public void handlePacket(byte[] bytes) {
-			Afsk1200MultiDemodulator.this.handlePacket(bytes, d);
+			Afsk1200MultiDemodulatorPlus.this.handlePacket(bytes, d);
 		}
 		
 	}
@@ -42,7 +42,7 @@ public class Afsk1200MultiDemodulator extends PacketDemodulator {
 	//private long   last_sample_count;
 	private int dup_count;
 	//public void incSampleCount() { sample_count++; }
-	private int last_demod, d0_count, d6_count, both_count; 
+	private int last_demod, d0_count, d6_count, both_count, d7_count; 
 	public void handlePacket(byte[] bytes, int d) {
 	//public void handlePacket(byte[] bytes) {
 		if (last!=null && d != last_demod && java.util.Arrays.equals(last, bytes)) {
@@ -52,8 +52,10 @@ public class Afsk1200MultiDemodulator extends PacketDemodulator {
 			
 			if (last_demod == 0)
 				d0_count--;
-			else
+			else if(last_demod == 6)
 				d6_count--;
+			else
+				d7_count--;
 			both_count++;				
 
 			//last_demod = d;
@@ -73,8 +75,10 @@ public class Afsk1200MultiDemodulator extends PacketDemodulator {
 
 			if (d == 0)
 				d0_count++;
-			else 
+			else if(d==6)
 				d6_count++;
+			else 
+				d7_count++;
 			last_demod = d;
 			//System.out.println(""+packet_count);
 			last = Arrays.copyOf(bytes,bytes.length);
@@ -86,24 +90,26 @@ public class Afsk1200MultiDemodulator extends PacketDemodulator {
 	}
 	
 	private PacketHandler h;
-	PacketDemodulator d0, d6;
+	PacketDemodulator d0, d6, d7;
 	//private int sample_rate;
 	//private int max_sample_delay;
 
-	public Afsk1200MultiDemodulator(int sample_rate, PacketHandler h) throws Exception {
+	public Afsk1200MultiDemodulatorPlus(int sample_rate, PacketHandler h) throws Exception {
   	super(sample_rate);
 		//this.sample_rate = sample_rate;
 		this.h = h;
 		//max_sample_delay = (10 * 8 * sample_rate) / 1200; // a 10 byte delay
 	  d0 = new Afsk1200Demodulator(sample_rate,1,0,new InnerHandler(0));
 	  d6 = new Afsk1200Demodulator(sample_rate,1,6,new InnerHandler(6));
+	  d7 =new PreClockingDemodulator(sample_rate,1,6,new InnerHandler(7));
 	}
 	protected void addSamplesPrivate(float[] s, int n) {
 		sample_count += n;
 		d0.addSamples(s, n);
 		d6.addSamples(s, n);
+		d7.addSamples(s, n);
 	}
 	public boolean dcd(){
-		return d6.dcd() || d0.dcd();
+		return d6.dcd() || d0.dcd() || d7.dcd();
 	}
 }

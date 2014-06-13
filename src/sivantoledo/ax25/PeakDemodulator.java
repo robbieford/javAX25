@@ -80,7 +80,7 @@ public class PeakDemodulator
 
     //New Variables for Zero Crossing (migrate old ones here as we realize we need them
     //-----------------------------------------------------------------------------------vvv
-    private static final int DEBUG = 2;
+    private static final int DEBUG = -1;
     //Structure Declarations
     private enum Freq {
 		f_1200,
@@ -298,8 +298,7 @@ public class PeakDemodulator
     		if (DEBUG > 9) {
     			System.out.println("Sample number: " + samplesReceived + " /Value: " + s[i]);
     		}
-    		
-    		
+    	
     		if(isIncreasing) {
     			if(sample > localPeak) {
     				localPeak = sample;

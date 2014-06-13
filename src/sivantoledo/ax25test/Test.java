@@ -47,6 +47,7 @@ import sivantoledo.ax25.PacketHandler;
 import sivantoledo.ax25.PeakDemodulator;
 import sivantoledo.ax25.PreClockingDemodulator;
 import sivantoledo.ax25.StrictZeroCrossingDemodulator;
+import sivantoledo.ax25.WindowedZeroCrossingDemodulator;
 //import sivantoledo.ax25.WindowedZeroCrossingDemodulator;
 import sivantoledo.ax25.ZeroCrossingDemodulator;
 import sivantoledo.ax25.Afsk1200Demodulator;
@@ -188,13 +189,14 @@ public class Test implements PacketHandler {
 		  //afsk = new Afsk1200(rate,filter_length,0,t);
 //		  multi = new Afsk1200Demodulator(rate,filter_length,0,t);
 //		  multi = new Afsk1200Demodulator(rate,1,0,t);
-//		  afsk6 = new Afsk1200Demodulator(rate,filter_length,6,t);
+//		  multi = new Afsk1200Demodulator(rate,filter_length,6,t);
 //		  multi = new Afsk1200Demodulator(rate,filter_length,3,t);
-		  multi = new Afsk1200MultiDemodulator(rate,t);
+//		  multi = new Afsk1200MultiDemodulatorPlus(rate,t);
+//		  multi = new Afsk1200MultiDemodulatorPlus(rate,t);
 
 //			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
-//			multi = new PeakDemodulator(rate,filter_length,3,t);
+			multi = new PeakDemodulator(rate,filter_length,3,t);
 //			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new PreClockingDemodulator(rate, 1,0,t);

@@ -85,9 +85,9 @@ public class Packet {
 	private float[] stats;
 	public void statistics(float[] stats) { 
 		this.stats = stats;
-		for (float f : stats)
-  		System.err.printf("%.2f ",f);
-		System.err.println(format(Arrays.copyOf(packet, size-2)));
+		//for (float f : stats)
+  		//System.err.printf("%.2f ",f);
+		//System.err.println(format(Arrays.copyOf(packet, size-2)));
 	}
 	public float[] statistics() { return stats; }
 	
