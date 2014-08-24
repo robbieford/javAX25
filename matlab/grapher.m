@@ -1,3 +1,5 @@
+fontSize = 25;
+
 x = linspace(0,100,1000);
 y = sin(x);
 f = figure('Position',[0,0,1280,1024]);
@@ -15,6 +17,8 @@ adjustedRange = 0.55*rangeY;
 minY = (center - adjustedRange);
 maxY = (center + adjustedRange);
 ylim([minY maxY]);
+set(gca,'FontSize',fontSize,'fontWeight','bold');
+set(findall(gcf,'type','text'),'FontSize',fontSize,'fontWeight','bold');
 saveas(f, strcat('.\..\..\rrxthesis\images\',regexprep(filename,'[^\w'']',''),'.png'));
 pause();
 close(f);
