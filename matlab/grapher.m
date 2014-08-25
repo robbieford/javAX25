@@ -1,4 +1,4 @@
-fontSize = 25;
+fontSize = 18;
 
 x = linspace(0,100,1000);
 y = sin(x);
@@ -19,6 +19,9 @@ maxY = (center + adjustedRange);
 ylim([minY maxY]);
 set(gca,'FontSize',fontSize,'fontWeight','bold');
 set(findall(gcf,'type','text'),'FontSize',fontSize,'fontWeight','bold');
-saveas(f, strcat('.\..\..\rrxthesis\images\',regexprep(filename,'[^\w'']',''),'.png'));
-pause();
+display('The error must be after here...');
+filename =  strcat('./../../rrxthesis/images/',regexprep(filename,'[^\w'']',''),'.png');
+display(strcat('Trying to sage as ', filename));
+saveas(f,filename);
+%pause();
 close(f);
