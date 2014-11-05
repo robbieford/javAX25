@@ -1,0 +1,41 @@
+fontSize = 25;
+
+x = linspace(0,200,200);
+y1 = sin(2*pi*x/40);
+y2 = sin(2*pi*x/(1/2200*48000))*0.5;
+y = cat(2, y1(1:40), y2(1:40), y1(34:73), y2(19:58),y1(68:107));
+y = y + sin(x/200)*2;
+y3 = x;
+for i = 2:199
+   y3(i) = y(i+1) - y(i -1); 
+end
+y3(1) = y3(2);
+y3(200) = y3(199);
+f = figure('Position',[0,0,1280,1024]);
+set(gcf,'color','w');
+x1 = cat(2, x(1:78), x(82:200));
+yn1 = cat(2, y(1:78),y(82:200));
+x2 = cat(2, x(1:38),x(42:78), x(82:118),x(122:158),x(162:200));
+yn2 = cat(2, y3(1:38),y3(42:78),y3(82:118),y3(122:158),y3(162:200));
+plot(x1, yn1, x2, yn2);
+filename = 'Original Signal With Offset and Deemphasis Problems and its Derivative';
+title(filename);
+xlabel('Sample Number');
+ylabel('Magnitude');
+minY = min(y);
+maxY = max(y);
+center = (minY+maxY)/ 2;
+rangeY = maxY - minY;
+adjustedRange = 0.55*rangeY;
+minY = (center - adjustedRange);
+maxY = (center + adjustedRange);
+ylim([minY maxY]);
+set(gca,'FontSize',fontSize,'fontWeight','bold');
+set(findall(gcf,'type','text'),'FontSize',fontSize,'fontWeight','bold');
+yL = get(gca,'YLim');
+xL = get(gca,'XLim');
+line(xL,[0 0],'Color','black');
+saveas(f, strcat('.\..\..\..\rrxthesis\images\',regexprep(filename,'[^\w'']',''),'.png'));
+pause();
+close(f);
+clear all;
