@@ -24,7 +24,16 @@ package sivantoledo.ax25;
 //import java.util.Arrays;
 
 public class Afsk1200MultiDemodulator extends PacketDemodulator {
-
+	/**
+	 * Class name items...
+	 */
+	private final static String MULTI = "Multi";
+	
+	public String getDemodulatorName() {
+		return MULTI;
+	}
+    /***/
+	
 	private class InnerHandler implements PacketHandler {
 		int d;
 		public InnerHandler(int demodulator) {

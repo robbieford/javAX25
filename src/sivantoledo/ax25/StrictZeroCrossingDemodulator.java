@@ -24,7 +24,16 @@ import java.util.ArrayList;
 public class StrictZeroCrossingDemodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
 {
-
+	/**
+	 * Class name items...
+	 */
+	private final static String STRICTZERO = "StrictZero";
+	
+	public String getDemodulatorName() {
+		return STRICTZERO + "-w_emphasis_" + emphasis;
+	}
+    /***/
+	
 	//Old Variables
     private float[] td_filter;
     private float[] cd_filter;
@@ -183,8 +192,8 @@ public class StrictZeroCrossingDemodulator
         }
 
         handler = h;
-        
-        System.err.printf("samples per bit = %.3f\n", this.samplesPerBit);
+        if (DEBUG > 0)
+        	System.err.printf("samples per bit = %.3f\n", this.samplesPerBit);
 
         float[][][] tdf;
         switch (emphasis) {
@@ -195,16 +204,19 @@ public class StrictZeroCrossingDemodulator
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
             default:
-                System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
+            	if (DEBUG >0)
+            		System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
                         emphasis);
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
         }
 
         for (filter_index = 0; filter_index < tdf.length; filter_index++) {
-            System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
+        	if (DEBUG > 0)
+        		System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
             if (filter_length == tdf[filter_index][rate_index].length) {
-                System.err.printf("Using filter length %d\n", filter_length);
+            	if (DEBUG > 0)
+            		System.err.printf("Using filter length %d\n", filter_length);
                 break;
             }
         }
@@ -318,7 +330,7 @@ public class StrictZeroCrossingDemodulator
 	    		freq = Freq.f_2200;
 	    	}
 
-	    	System.out.println(sample_rate/samplesSinceLastXing/2);
+	    	//System.out.println(sample_rate/samplesSinceLastXing/2);
 	    	
     		if (DEBUG > 2) {
     			System.out.println("Frequency is:" + freq);

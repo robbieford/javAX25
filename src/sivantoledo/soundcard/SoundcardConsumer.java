@@ -22,6 +22,7 @@ package sivantoledo.soundcard;
 
 public abstract class SoundcardConsumer {
 	
+	private static final int DEBUG = -1;
 	int   sample_rate;
 	float peak = 0.0f;
 	float decay;
@@ -29,7 +30,8 @@ public abstract class SoundcardConsumer {
 	public SoundcardConsumer(int sample_rate) {
 		this.sample_rate = sample_rate;
 		decay = (float) ( 1.0 - Math.exp(Math.log(0.5)/(double)sample_rate) );
-		System.out.printf("decay = %e\n", (double)decay);
+		if (DEBUG > 0)
+			System.out.printf("decay = %e\n", (double)decay);
 
 	}
 

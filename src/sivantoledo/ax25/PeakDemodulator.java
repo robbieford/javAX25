@@ -24,6 +24,15 @@ import java.util.ArrayList;
 public class PeakDemodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
 {
+	/**
+	 * Class name items...
+	 */
+	private final static String PEAK = "Peak";
+	
+	public String getDemodulatorName() {
+		return PEAK + "-w_emphasis_" + emphasis;
+	}
+    /***/
 
 	//Old Variables
     private float[] td_filter;
@@ -200,8 +209,8 @@ public class PeakDemodulator
         }
 
         handler = h;
-        
-        System.err.printf("samples per bit = %.3f\n", this.samplesPerBit);
+        if (DEBUG > 0)
+        	System.err.printf("samples per bit = %.3f\n", this.samplesPerBit);
 
         float[][][] tdf;
         switch (emphasis) {
@@ -212,16 +221,19 @@ public class PeakDemodulator
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
             default:
-                System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
+            	if (DEBUG > 0)
+            		System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
                         emphasis);
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
         }
 
         for (filter_index = 0; filter_index < tdf.length; filter_index++) {
-            System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
+        	if (DEBUG > 0)
+        		System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
             if (filter_length == tdf[filter_index][rate_index].length) {
-                System.err.printf("Using filter length %d\n", filter_length);
+            	if (DEBUG > 0)
+            		System.err.printf("Using filter length %d\n", filter_length);
                 break;
             }
         }

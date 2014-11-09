@@ -24,12 +24,17 @@ import java.util.ArrayList;
 public class PreClockingDemodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
 {
-
-    public enum Frequency {
-    	f_1200,
-    	f_2200
+	/**
+	 * Class name items...
+	 */
+	private final static String PRECLOCKING = "PreclockingDemodulator";
+	private static final int DEBUG = -1;
+	
+	public String getDemodulatorName() {
+		return PRECLOCKING + "-w_emphasis_" + emphasis;
 	}
-    
+    /***/
+	
 	private float[] td_filter;
     private float[] cd_filter;
     private int rate_index;
@@ -119,7 +124,8 @@ public class PreClockingDemodulator
         this.sampleRate = sample_rate;
         this.samplesPerBaud = (float) sample_rate / 1200.0f;
         samplesInFlag = Math.round(samplesPerBaud * FLAG_LENGTH_IN_BAUD);
-        System.err.printf("samples per bit = %.3f\n", this.samplesPerBaud);
+        if (DEBUG > 0)
+        	System.err.printf("samples per bit = %.3f\n", this.samplesPerBaud);
         //this.samples_per_bit = Afsk1200Filters.bit_periods[rate_index]; // this needs to be computed locally
 
         //if (samples_per_bit * 1200 != sample_rate) {
@@ -139,16 +145,19 @@ public class PreClockingDemodulator
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
             default:
-                System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
+            	if (DEBUG > 0)
+            		System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
                         emphasis);
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
         }
 
         for (filter_index = 0; filter_index < tdf.length; filter_index++) {
-            System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
+        	if (DEBUG > 0)
+        		System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
             if (filter_length == tdf[filter_index][rate_index].length) {
-                System.err.printf("Using filter length %d\n", filter_length);
+            	if (DEBUG > 0)
+            		System.err.printf("Using filter length %d\n", filter_length);
                 break;
             }
         }
@@ -687,7 +696,7 @@ public class PreClockingDemodulator
                     	
                     	if (packet != null) {
                     		try {
-                    			System.out.println("+++++++" + packet.toString());
+                    			//System.out.println("+++++++" + packet.toString());
                     		} catch (Exception e) {
                     			
                     		}
@@ -736,7 +745,7 @@ public class PreClockingDemodulator
                         if (bitcount == 8) {
                             if (packet == null) {
                                 packet = new Packet();
-                                System.out.println("New Packet");
+                                //System.out.println("New Packet");
                             }
                             //if (data==0xAA) packet.terminate();
 

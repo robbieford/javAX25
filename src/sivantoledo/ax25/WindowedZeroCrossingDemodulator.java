@@ -24,7 +24,16 @@ import java.util.ArrayList;
 public class WindowedZeroCrossingDemodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
 {
-
+	/**
+	 * Class name items...
+	 */
+	private final static String WINDOWEDZERO = "WindowedZero";
+	
+	public String getDemodulatorName() {
+		return WINDOWEDZERO + "-w_emphasis_" + emphasis;
+	}
+    /***/
+	
 	//Old Variables
     private int rate_index;
     
@@ -128,8 +137,8 @@ public class WindowedZeroCrossingDemodulator
         }
 
         handler = h;
-        
-        System.err.printf("samples per bit = %.3f\n", this.samplesPerBit);
+        if (DEBUG > 0)
+        	System.err.printf("samples per bit = %.3f\n", this.samplesPerBit);
 
         float[][][] tdf;
         switch (emphasis) {
@@ -140,16 +149,19 @@ public class WindowedZeroCrossingDemodulator
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
             default:
-                System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
+            	if (DEBUG > 0)
+            		System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
                         emphasis);
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
         }
 
         for (filter_index = 0; filter_index < tdf.length; filter_index++) {
-            System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
+        	if (DEBUG > 0)
+        		System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
             if (filter_length == tdf[filter_index][rate_index].length) {
-                System.err.printf("Using filter length %d\n", filter_length);
+            	if (DEBUG > 0)
+            		System.err.printf("Using filter length %d\n", filter_length);
                 break;
             }
         }

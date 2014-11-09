@@ -28,4 +28,11 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 
 	//public void addSamples(float[] s, int n);
 	public abstract boolean dcd();
+	
+	public abstract String getDemodulatorName();
+	
+    public enum Frequency {
+    	f_1200,
+    	f_2200
+	}
 }

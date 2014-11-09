@@ -19,12 +19,22 @@
  */
 package sivantoledo.ax25;
 
-import java.util.Arrays;
 
 public class Afsk1200Demodulator
         extends PacketDemodulator //implements HalfduplexSoundcardClient 
 {
-
+	/**
+	 * Class name items...
+	 */
+	private final static String CORRELATION = "Correlation";
+	private static final int DEBUG = -1;
+	
+	public String getDemodulatorName() {
+		return CORRELATION + "-w_emphasis_" + emphasis;
+	}
+	
+    /***/
+	
     private float[] td_filter;
     private float[] cd_filter;
     private int rate_index;
@@ -111,7 +121,8 @@ public class Afsk1200Demodulator
         handler = h;
         this.sample_rate = sample_rate;
         this.samples_per_bit = (float) sample_rate / 1200.0f;
-        System.err.printf("samples per bit = %.3f\n", this.samples_per_bit);
+        if (DEBUG > 0)
+        	System.err.printf("samples per bit = %.3f\n", this.samples_per_bit);
         //this.samples_per_bit = Afsk1200Filters.bit_periods[rate_index]; // this needs to be computed locally
 
         //if (samples_per_bit * 1200 != sample_rate) {
@@ -131,16 +142,19 @@ public class Afsk1200Demodulator
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
             default:
-                System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
+            	if (DEBUG > 0)
+            		System.err.printf("Filter for de-emphasis of %ddB is not availabe, using 6dB\n",
                         emphasis);
                 tdf = Afsk1200Filters.time_domain_filter_full;
                 break;
         }
 
         for (filter_index = 0; filter_index < tdf.length; filter_index++) {
-            System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
+        	if(DEBUG > 0) 
+        		System.err.printf("Available filter length %d\n", tdf[filter_index][rate_index].length);
             if (filter_length == tdf[filter_index][rate_index].length) {
-                System.err.printf("Using filter length %d\n", filter_length);
+            	if (DEBUG > 0)
+            		System.err.printf("Using filter length %d\n", filter_length);
                 break;
             }
         }
