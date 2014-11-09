@@ -41,6 +41,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import sivantoledo.ax25.Afsk1200Modulator;
 import sivantoledo.ax25.Afsk1200MultiDemodulator;
 import sivantoledo.ax25.Arrays;
+import sivantoledo.ax25.GoertzelDemodulator;
 import sivantoledo.ax25.Packet;
 import sivantoledo.ax25.PacketDemodulator;
 import sivantoledo.ax25.PacketHandler;
@@ -196,7 +197,8 @@ public class Test implements PacketHandler {
 
 //			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
-			multi = new PeakDemodulator(rate,filter_length,3,t);
+			//multi = new PeakDemodulator(rate,filter_length,3,t);
+			multi = new GoertzelDemodulator(rate, filter_length, 3, t);
 //			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new PreClockingDemodulator(rate, 1,0,t);
