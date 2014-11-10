@@ -188,21 +188,21 @@ public class Test implements PacketHandler {
 		PacketDemodulator multi = null;
 		try {
 		  //afsk = new Afsk1200(rate,filter_length,0,t);
-//		  multi = new Afsk1200Demodulator(rate,filter_length,0,t);
+		  //multi = new Afsk1200Demodulator(rate,filter_length,0,t);
 //		  multi = new Afsk1200Demodulator(rate,1,0,t);
-//		  multi = new Afsk1200Demodulator(rate,filter_length,6,t);
+//		  multi = new Afsk1200Demodulator(rate,filter_length,0,t);
 //		  multi = new Afsk1200Demodulator(rate,filter_length,3,t);
 //		  multi = new Afsk1200MultiDemodulatorPlus(rate,t);
 //		  multi = new Afsk1200MultiDemodulatorPlus(rate,t);
 
 //			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
-			//multi = new PeakDemodulator(rate,filter_length,3,t);
-			multi = new GoertzelDemodulator(rate, filter_length, 3, t);
-//			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
-//			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
-//			multi = new PreClockingDemodulator(rate, 1,0,t);
-//			multi = new WindowedZeroCrossingDemodulator(rate, filter_length, 3, t);
+		//	multi = new PeakDemodulator(rate,filter_length,0,t);
+	//		multi = new GoertzelDemodulator(rate, filter_length, 6, t);
+			multi = new ZeroCrossingDemodulator(rate,filter_length,1,t);
+			//multi = new StrictZeroCrossingDemodulator(rate,filter_length,6,t);
+		//	multi = new PreClockingDemodulator(rate, filter_length,0,t);
+	//		multi = new WindowedZeroCrossingDemodulator(rate, filter_length, 1, t);
 		  mod = new Afsk1200Modulator(rate);
 		} catch (Exception e) {
 			System.out.println("Exception trying to create an Afsk1200 object: "+e.getMessage());

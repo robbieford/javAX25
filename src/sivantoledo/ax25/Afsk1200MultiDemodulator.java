@@ -24,95 +24,67 @@ package sivantoledo.ax25;
 //import java.util.Arrays;
 
 public class Afsk1200MultiDemodulator extends PacketDemodulator {
-	/**
-	 * Class name items...
-	 */
 	private final static String MULTI = "Multi";
-	
+
 	public String getDemodulatorName() {
 		return MULTI;
 	}
-    /***/
-	
+
 	private class InnerHandler implements PacketHandler {
 		int d;
+
 		public InnerHandler(int demodulator) {
 			d = demodulator;
 		}
+
 		public void handlePacket(byte[] bytes) {
 			Afsk1200MultiDemodulator.this.handlePacket(bytes, d);
 		}
-		
+
 	}
-	
-	private int  packet_count;
-	private long sample_count;
+
 	private byte[] last;
-	//private long   last_sample_count;
-	private int dup_count;
-	//public void incSampleCount() { sample_count++; }
-	private int last_demod, d0_count, d6_count, both_count; 
+	private int last_demod;
+
 	public void handlePacket(byte[] bytes, int d) {
-	//public void handlePacket(byte[] bytes) {
-		if (last!=null && d != last_demod && java.util.Arrays.equals(last, bytes)) {
-			//&& sample_count <= last_sample_count + max_sample_delay ) {
-			dup_count++;
-			//System.err.printf("Duplicate, %d so far\n",dup_count);
-			
-			if (last_demod == 0)
-				d0_count--;
-			else
-				d6_count--;
-			both_count++;				
-
-			//last_demod = d;
+		if (last != null && d != last_demod
+				&& java.util.Arrays.equals(last, bytes)) {
 		} else {
-			packet_count++;
-			
-			//System.err.printf("Non duplicate, d=%d last_d=%d same-data=%b\n",d, last_demod,
-			//		Arrays.equals(last, bytes));
-			//
-			//if (last!=null) {
-			//	System.err.printf("lengths = %d %d\n",bytes.length,last.length);
-			//	for (int i=0; i<bytes.length; i++) {
-			//		if (i>=last.length) break;
-			//		System.err.printf("%02x %02x\n",bytes[i],last[i]);
-			//	}
-			//}
 
-			if (d == 0)
-				d0_count++;
-			else 
-				d6_count++;
+			if (d == 0) {
+			} else {
+			}
 			last_demod = d;
-			//System.out.println(""+packet_count);
-			last = Arrays.copyOf(bytes,bytes.length);
-			//last_sample_count = sample_count;
+			// System.out.println(""+packet_count);
+			last = Arrays.copyOf(bytes, bytes.length);
+			// last_sample_count = sample_count;
 
-			if (h!=null) h.handlePacket(bytes);
+			if (h != null)
+				h.handlePacket(bytes);
 		}
-		//System.err.printf("d0=%d d6=%d both=%d total=%d\n",d0_count,d6_count,both_count,packet_count);
+		// System.err.printf("d0=%d d6=%d both=%d total=%d\n",d0_count,d6_count,both_count,packet_count);
 	}
-	
+
 	private PacketHandler h;
 	PacketDemodulator d0, d6;
-	//private int sample_rate;
-	//private int max_sample_delay;
 
-	public Afsk1200MultiDemodulator(int sample_rate, PacketHandler h) throws Exception {
-  	super(sample_rate);
-		//this.sample_rate = sample_rate;
+	public Afsk1200MultiDemodulator(int sample_rate, PacketHandler h)
+			throws Exception {
+		super(sample_rate, h);
+		// this.sample_rate = sample_rate;
 		this.h = h;
-		//max_sample_delay = (10 * 8 * sample_rate) / 1200; // a 10 byte delay
-	  d0 = new Afsk1200Demodulator(sample_rate,1,0,new InnerHandler(0));
-	  d6 = new Afsk1200Demodulator(sample_rate,1,6,new InnerHandler(6));
+		// max_sample_delay = (10 * 8 * sample_rate) / 1200; // a 10 byte delay
+		d0 = new Afsk1200Demodulator(sample_rate, 1, 0, new InnerHandler(0));
+		d6 = new Afsk1200Demodulator(sample_rate, 1, 6, new InnerHandler(6));
 	}
-	protected void addSamplesPrivate(float[] s, int n) {
-		sample_count += n;
-		d0.addSamples(s, n);
-		d6.addSamples(s, n);
-	}
-	public boolean dcd(){
+
+	public boolean dcd() {
 		return d6.dcd() || d0.dcd();
+	}
+
+	@Override
+	protected void addSamplePrivate(float s) {
+		d0.addSamplePrivate(s);
+		d6.addSamplePrivate(s);
 	}
 }

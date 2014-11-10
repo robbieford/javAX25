@@ -1,7 +1,9 @@
 package sivantoledo.ax25;
 public class Afsk1200Filters {
   static final public int[] sample_rates = { 9600, 12000, 11025, 16000, 22050, 24000, 44100, 48000 };
-  static final public int[] bit_periods = { 8, 10, 9, 13, 18, 20, 36, 40 };
+  static final public int[] bit_periods = { 8, 10, 9, 13, 18, 20, 36, 40 }; //Perhaps a bad name, number of samples in a bit period for each of the sample_rates above ^^^.
+  // > 20db attenuation < 700Hz and > 2700Hz 18 order FIR filter.
+  //This is the 6db emphasis filter (no attenuation on 2200Hz, 6db attenuation on 1200Hz).
   static final public float[][][] time_domain_filter_full = {
    {
     { -8.538057e-02f, -1.606386e-01f, -2.562661e-02f, 1.780909e-01f, 1.780909e-01f, -2.562661e-02f, -1.606386e-01f, -8.538057e-02f },
@@ -24,6 +26,7 @@ public class Afsk1200Filters {
     { -1.555936e-03f, -3.074922e-03f, -4.298532e-03f, -5.055988e-03f, -5.207867e-03f, -4.661980e-03f, -3.386024e-03f, -1.415645e-03f, 1.143128e-03f, 4.117646e-03f, 7.278662e-03f, 1.035612e-02f, 1.305964e-02f, 1.510224e-02f, 1.622537e-02f, 1.622320e-02f, 1.496402e-02f, 1.240675e-02f, 8.611013e-03f, 3.739340e-03f, -1.948784e-03f, -8.111153e-03f, -1.434449e-02f, -2.021209e-02f, -2.527549e-02f, -2.912772e-02f, -3.142564e-02f, -3.191868e-02f, -3.047148e-02f, -2.707872e-02f, -2.187043e-02f, -1.510729e-02f, -7.165972e-03f, 1.484604e-03f, 1.031443e-02f, 1.876872e-02f, 2.630674e-02f, 3.244019e-02f, 3.676812e-02f, 3.900592e-02f, 3.900592e-02f, 3.676812e-02f, 3.244019e-02f, 2.630674e-02f, 1.876872e-02f, 1.031443e-02f, 1.484604e-03f, -7.165972e-03f, -1.510729e-02f, -2.187043e-02f, -2.707872e-02f, -3.047148e-02f, -3.191868e-02f, -3.142564e-02f, -2.912772e-02f, -2.527549e-02f, -2.021209e-02f, -1.434449e-02f, -8.111153e-03f, -1.948784e-03f, 3.739340e-03f, 8.611013e-03f, 1.240675e-02f, 1.496402e-02f, 1.622320e-02f, 1.622537e-02f, 1.510224e-02f, 1.305964e-02f, 1.035612e-02f, 7.278662e-03f, 4.117646e-03f, 1.143128e-03f, -1.415645e-03f, -3.386024e-03f, -4.661980e-03f, -5.207867e-03f, -5.055988e-03f, -4.298532e-03f, -3.074922e-03f, -1.555936e-03f }
    }
   };
+  //This is just a standard bandpass. It originated from a 180-order 900-2500Hz bandpass filter. Results show that 18 order works well.
   static final public float[][][] time_domain_filter_none = {
    {
     { -1.339009e-01f, -2.058943e-01f, -1.939428e-02f, 2.397803e-01f, 2.397803e-01f, -1.939428e-02f, -2.058943e-01f, -1.339009e-01f },
