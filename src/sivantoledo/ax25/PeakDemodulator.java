@@ -28,7 +28,7 @@ public class PeakDemodulator extends PacketDemodulator // implements
 	private final static String PEAK = "Peak";
 
 	public String getDemodulatorName() {
-		return PEAK;// + "-w_emphasis_" + emphasis;
+		return PEAK + "-w_emphasis_" + emphasis;
 	}
 
 	// New Variables for Zero Crossing (migrate old ones here as we realize we

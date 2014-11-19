@@ -88,7 +88,7 @@ public class Afsk1200MultiDemodulatorPlus extends PacketDemodulator {
 		// max_sample_delay = (10 * 8 * sample_rate) / 1200; // a 10 byte delay
 		d0 = new Afsk1200Demodulator(sample_rate, 1, 0, new InnerHandler(0));
 		d6 = new Afsk1200Demodulator(sample_rate, 1, 6, new InnerHandler(6));
-		d7 = new PreClockingDemodulator(sample_rate, 1, 6, new InnerHandler(7));
+		d7 = new MixedPreClockingDemodulator(sample_rate, 1, 6, new InnerHandler(7));
 	}
 
 	protected void addSamplePrivate(float s) {

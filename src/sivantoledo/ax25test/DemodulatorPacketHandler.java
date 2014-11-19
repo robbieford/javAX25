@@ -19,8 +19,11 @@ public class DemodulatorPacketHandler implements PacketHandler {
 		if (DEBUG > 1)
 			System.out.println(Packet.format(packet));
 		
-		packetCount++;
-		packets.add(packet);
+		if (!packets.contains(packet))
+		{
+			packetCount++;
+			packets.add(packet);
+		}
 	}
 
 	public DemodulatorPacketHandler() {

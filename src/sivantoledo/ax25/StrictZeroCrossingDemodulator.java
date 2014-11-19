@@ -28,7 +28,7 @@ public class StrictZeroCrossingDemodulator extends PacketDemodulator // implemen
 	private final static String STRICTZERO = "StrictZero";
 
 	public String getDemodulatorName() {
-		return STRICTZERO;// + "-w_emphasis_" + emphasis;
+		return STRICTZERO + "-w_emphasis_" + emphasis;
 	}
 
 	private static final int DEBUG = -1;

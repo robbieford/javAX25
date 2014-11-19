@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import sivantoledo.soundcard.SoundcardConsumer;
 
 public abstract class PacketDemodulator extends SoundcardConsumer {
-	private static int DEBUG = 1;
+	private static int DEBUG = -1;
 	
 	boolean filterData = false;
 	float[] filter;
@@ -38,7 +38,6 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 	{
 		this(sample_rate, h);
 		
-		this.emphasis = emphasis;
 		//Determine the rate index, this plays into how many coefficients will be needed.
 		for (rate_index = 0; rate_index < Afsk1200Filters.sample_rates.length; rate_index++) {
 			if (Afsk1200Filters.sample_rates[rate_index] == sample_rate) {
@@ -56,10 +55,12 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 		case 0:
 			tdf = Afsk1200Filters.time_domain_filter_none;
 			filterData = true;
+			this.emphasis = emphasis;
 			break;
 		case 6:
 			tdf = Afsk1200Filters.time_domain_filter_full;
 			filterData = true;
+			this.emphasis = emphasis;
 			break;
 		default:
 			if (DEBUG > 0)
@@ -67,6 +68,7 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 						.printf("Filter for de-emphasis of %ddB is not availabe, using no filtering",
 								emphasis);
 			filterData = false;
+			this.emphasis = -1;
 			break;
 		}
 
@@ -159,7 +161,7 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 	// Packet Construction variables
 	private int data, bitcount;
 	private Packet packet; // received packet
-	private PacketHandler handler;
+	protected PacketHandler handler;
 	private State state = State.WAITING;
 	protected int emphasis;
 	private int flag_count = 0;
@@ -269,8 +271,9 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 																// is too large
 								state = State.WAITING;
 								data_carrier = false;
-								System.err
-										.println("Packet too Large. Throwing out");
+								if (DEBUG >3)
+									System.err
+											.println("Packet too Large. Throwing out");
 							}
 							data = 0;
 							bitcount = 0;
@@ -288,8 +291,9 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 							if (!packet.addByte((byte) data)) {
 								state = State.WAITING;
 								data_carrier = false;
-								System.err
-										.println("Packet too Large. Throwing out");
+								if (DEBUG > 3)
+									System.err
+											.println("Packet too Large. Throwing out");
 
 							}
 							data = 0;

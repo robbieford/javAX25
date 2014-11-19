@@ -21,7 +21,7 @@ package sivantoledo.ax25;
 
 import java.util.ArrayList;
 
-public class PreClockingDemodulator extends PacketDemodulator // implements
+public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 																// HalfduplexSoundcardClient
 {
 	/**
@@ -46,33 +46,22 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 	float ZERO_CROSSING_THRESHOLD;
 	private int sampleRate;
 
-	public PreClockingDemodulator(int sample_rate, int filter_length)
+	public MixedPreClockingDemodulator(int sample_rate, int filter_length)
 			throws Exception {
 		this(sample_rate, filter_length, 6, null);
 	}
 
-	public PreClockingDemodulator(int sample_rate, int filter_length,
+	public MixedPreClockingDemodulator(int sample_rate, int filter_length,
 			int emphasis, PacketHandler h) throws Exception {
 		super(sample_rate, filter_length, emphasis, h);
 
-		filteredSampleArray = new ArrayList<Float>(); // Needs to big enough for
+		samplesInPacket = new ArrayList<Float>(); // Needs to big enough for
 														// the filter
-
-		// transmit_controller = c;
-		for (rate_index = 0; rate_index < Afsk1200Filters.sample_rates.length; rate_index++) {
-			if (Afsk1200Filters.sample_rates[rate_index] == sample_rate) {
-				break;
-			}
-		}
-		if (rate_index == Afsk1200Filters.sample_rates.length) {
-			throw new Exception("Sample rate " + sample_rate + " not supported");
-		}
+		sampleArray = new ArrayList<Float>();
 
 		this.sampleRate = sample_rate;
 		this.samplesPerBaud = (float) sample_rate / 1200.0f;
 		samplesInFlag = Math.round(samplesPerBaud * FLAG_LENGTH_IN_BAUD);
-		if (DEBUG > 0)
-			System.err.printf("samples per bit = %.3f\n", this.samplesPerBaud);
 
 		cd_filter = Afsk1200Filters.corr_diff_filter[filter_index][rate_index];
 
@@ -86,17 +75,7 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 		phase_inc_f0 = (float) (2.0 * Math.PI * 1200.0 / sample_rate);
 		phase_inc_f1 = (float) (2.0 * Math.PI * 2200.0 / sample_rate);
 
-		// System.out.printf("Size of symbol sync filter is %d\n",
-		// symbol_sync_filter.length);
-
-		ZERO_CROSSING_THRESHOLD = sampleRate / 2200.0f / 4.0f;
-
-	}
-
-	private volatile boolean data_carrier = false;
-
-	public boolean dcd() {
-		return data_carrier;
+		ZERO_CROSSING_THRESHOLD = sampleRate / 2200.0f / 4f; // 1/4 Period 
 	}
 
 	private float sum(float[] x, int j) {
@@ -111,7 +90,7 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 		return c;
 	}
 
-	private int j_cd; // time domain index
+	private int j_cd; // correlation domain index
 	private int j_corr; // correlation index
 	private float phase_f0, phase_f1;
 	private long t; // running sample counter
@@ -130,18 +109,19 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 	 * flag If flags
 	 */
 
-	private ArrayList<Float> filteredSampleArray; // Slightly bigger than max
-													// packet
+	private ArrayList<Float> samplesInPacket; // Slightly bigger than max packet
+	private ArrayList<Float> sampleArray;
 	private static final int MINIMUM_PACKET_BYTES = 17;
 	private static final int MAXIMUM_PACKET_BYTES = 256; // MTU for AX25
 	private static final int FLAG_LENGTH_IN_BAUD = 9; // 0x7E
+	private static final float CENTER_FREQUENCY = 1700f;
 
 	private boolean containsStartFlag = false;
 
 	private static final int BUFFER_SAMPLES_AFTER_FLAG = 10;
 
 	protected void addSamplePrivate(float sample) {
-		filteredSampleArray.add(sample);
+		sampleArray.add(sample);
 
 		// Look for flags in samples
 		boolean flagInSamples = containsFlag(sample);
@@ -149,50 +129,59 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 			// something
 			// System.out.println("Saw a flag! " + t);
 			if (containsStartFlag) {
-				int bytesBetweenFlags = (int) ((filteredSampleArray.size()
+				int bytesBetweenFlags = (int) ((sampleArray.size()
 						- samplesInFlag * 2 - BUFFER_SAMPLES_AFTER_FLAG) / samplesPerBaud) / 8;
-
+				//If the size is right, try to decode it otherwise clean up local storage
 				if (bytesBetweenFlags >= MINIMUM_PACKET_BYTES
 						&& bytesBetweenFlags <= MAXIMUM_PACKET_BYTES) {
 					// System.out.println("Number of Potential Packtes: " +
 					// ++numPotentialPackets + " with size: " +
 					// bytesBetweenFlags);
+					samplesInPacket = new ArrayList<Float>(sampleArray);
 					processPacket();
-					shrinkFilteredSampleArray();
+					shrinkSampleArray();
 				} else {
-					shrinkFilteredSampleArray();
+					shrinkSampleArray();
 				}
 
 			} else {
 				containsStartFlag = true;
-				shrinkFilteredSampleArray();
+				shrinkSampleArray();
 			}
 		}
 	}
 
 	int numPotentialPackets = 0;
-
+	
+	/**
+	 * Once we have enough data actually try and demodulate the packet using this overly
+	 * complicated method.
+	 */
 	private void processPacket() {
 		ArrayList<Float> derivativeOfSamples = getDerivativeOfFilteredData();
 		ArrayList<Float> derivativeCrossingPositions = calulateZeroCrossings(derivativeOfSamples);
 		ArrayList<Float> frequenciesFromDerivative = getFrequenciesSampleList(derivativeCrossingPositions);
 		ArrayList<Float> detectedFreqTransitions = getTransitionsFromFreqData(frequenciesFromDerivative);
 		int combOffset = getCombIndex(detectedFreqTransitions);
+		//System.out.println(combOffset);
 		ArrayList<Frequency> frequencySymbolList = getFrequencySymbolList(
 				combOffset, frequenciesFromDerivative,
 				derivativeCrossingPositions);
 		generatePacket(frequencySymbolList);
 	}
 
+	/**
+	 * Taking a frequency list f_1200/f_2200 actually put together the packet...
+	 * @param frequencySymbolList
+	 */
 	private void generatePacket(ArrayList<Frequency> frequencySymbolList) {
 		Frequency lastFreq = frequencySymbolList.get(0);
 		int bauds = 0;
 
-		for (int i = 0; i < frequencySymbolList.size(); i++) {
+		for (int i = 1; i < frequencySymbolList.size(); i++) {
 			bauds++;
 			if (frequencySymbolList.get(i) != lastFreq) {
-				// System.out.println(bauds);// + " " + i);
-				// if(bauds == 8) bauds =7;
+				System.out.println(bauds + "," + frequencySymbolList.get(i));
 				handleDemodulatedBits(bauds);
 				bauds = 0;
 				lastFreq = frequencySymbolList.get(i);
@@ -200,12 +189,20 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 		}
 	}
 
+	/**
+	 * Using the calculated data compose a list of the best guess of frequencies
+	 * for each bit period of this packet. 
+	 * @param combOffset
+	 * @param frequenciesFromDerivative
+	 * @param derivativeCrossingPositions
+	 * @return
+	 */
 	private ArrayList<Frequency> getFrequencySymbolList(int combOffset,
 			ArrayList<Float> frequenciesFromDerivative,
 			ArrayList<Float> derivativeCrossingPositions) {
 		ArrayList<Frequency> frequencies = new ArrayList<Frequency>();
 
-		for (Float i = new Float(combOffset); i < filteredSampleArray.size(); i += samplesPerBaud) {
+		for (Float i = new Float(combOffset); i < samplesInPacket.size(); i += samplesPerBaud) {
 			Frequency freq = getFrequency(i + 1, i + samplesPerBaud,
 					frequenciesFromDerivative, derivativeCrossingPositions);
 			if (freq != null) {
@@ -216,18 +213,29 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 		return frequencies;
 	}
 
+	/**
+	 * Get the average frequency for this bit period. Using zero crossings.
+	 * 
+	 * @param start
+	 * @param end
+	 * @param frequenciesFromDerivative
+	 * @param derivativeCrossingPositions
+	 * @return
+	 */
 	private Frequency getFrequency(float start, float end,
 			ArrayList<Float> frequenciesFromDerivative,
 			ArrayList<Float> derivativeCrossingPositions) {
 		int startIdx = -1, endIdx = -1;
 		float sum = 0.0f;
 
+		//Get the first index in the data the corresponds to the start and end index
 		for (int i = 0; i < derivativeCrossingPositions.size(); i++) {
 			if (startIdx < 0 && derivativeCrossingPositions.get(i) > start) {
 				startIdx = i;
 			}
 			if (endIdx < 0 && derivativeCrossingPositions.get(i) > end) {
 				endIdx = i - 1;
+				//Break?
 			}
 		}
 
@@ -239,11 +247,18 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 			sum += frequenciesFromDerivative.get(i);
 		}
 
-		Frequency freq = sum / (endIdx + 1 - startIdx) > 1700 ? Frequency.f_2200
+		Frequency freq = sum / (endIdx + 1 - startIdx) > CENTER_FREQUENCY ? Frequency.f_2200
 				: Frequency.f_1200;
 		return freq;
 	}
 
+	/**
+	 * Using the data for the detected frequency transition indexes, figure out which
+	 * index into the packet data best corresponds to the start of a bit period.
+	 * 
+	 * @param detectedFreqTransitions
+	 * @return
+	 */
 	private int getCombIndex(ArrayList<Float> detectedFreqTransitions) {
 		long minimumSquaredDistance = -1;
 		int sampleCombPosition = 0;
@@ -271,22 +286,32 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 		return sampleCombPosition;
 	}
 
+	/**
+	 * Take a list of frequency data and return a list of indexes into this list
+	 * which correspond to transitions through 1700Hz (half way between 1200 & 2200)
+	 * 
+	 * @param freqs
+	 * @return
+	 */
 	private ArrayList<Float> getTransitionsFromFreqData(ArrayList<Float> freqs) {
-		ArrayList<Float> sampleNumbers = new ArrayList<Float>();
+		ArrayList<Float> sampleNumbersOfFrequencyTransitions = new ArrayList<Float>();
 
 		for (int i = 1; i < freqs.size(); i++) {
-			if (isZeroCrossing(freqs.get(i - 1) - 1700.0f,
-					freqs.get(i) - 1700.0f)) {
-				sampleNumbers.add(i
-						- 1
-						+ zeroCrossingPercentage(freqs.get(i - 1) - 1700.0f,
-								freqs.get(i) - 1700.0f));
+			if (isZeroCrossing(freqs.get(i - 1) - CENTER_FREQUENCY, freqs.get(i) - CENTER_FREQUENCY)) {
+				sampleNumbersOfFrequencyTransitions.add(i - 1 +
+						zeroCrossingPercentage(freqs.get(i - 1) - CENTER_FREQUENCY, freqs.get(i) - CENTER_FREQUENCY));
 			}
 		}
 
-		return sampleNumbers;
+		return sampleNumbersOfFrequencyTransitions;
 	}
 
+	/**
+	 * Take a list of zero crossing locations and convert those to frequencies
+	 * 
+	 * @param data
+	 * @return
+	 */
 	private ArrayList<Float> getFrequenciesSampleList(ArrayList<Float> data) {
 		ArrayList<Float> freqs = new ArrayList<Float>();
 
@@ -297,6 +322,13 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 		return freqs;
 	}
 
+	/**
+	 * Take the sample array and every where there is a zero crossing catalog that and then
+	 * return a list of all the indexes of the zero crossings.
+	 * 
+	 * @param samples
+	 * @return
+	 */
 	private ArrayList<Float> calulateZeroCrossings(ArrayList<Float> samples) {
 		// float ZERO_CROSSING_THRESHOLD = 5f;
 		int sinceLastCrossing = Math.round(samplesPerBaud);
@@ -304,12 +336,8 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 
 		for (int i = 1; i < samples.size(); i++) {
 			sinceLastCrossing++;
-			if (sinceLastCrossing > ZERO_CROSSING_THRESHOLD
-					&& isZeroCrossing(samples.get(i - 1), samples.get(i))) {
-				crossingList.add(i
-						- 1
-						+ zeroCrossingPercentage(samples.get(i - 1),
-								samples.get(i)));
+			if (sinceLastCrossing > ZERO_CROSSING_THRESHOLD && isZeroCrossing(samples.get(i - 1), samples.get(i))) {
+				crossingList.add(i - 1 + zeroCrossingPercentage(samples.get(i - 1),samples.get(i)));
 				sinceLastCrossing = 0;
 			}
 		}
@@ -317,44 +345,71 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 		return crossingList;
 	}
 
+	/**
+	 * If the first sample has the opposite sign of the second sample return true
+	 * @param firstSample
+	 * @param secondSample
+	 * @return
+	 */
 	protected boolean isZeroCrossing(float firstSample, float secondSample) {
 		return ((firstSample <= 0 && secondSample > 0) || // Going from below
 															// zero to above OR
-		(firstSample >= 0 && secondSample < 0)); // Going from above zer to
+		(firstSample >= 0 && secondSample < 0)); // Going from above zero to
 													// below
 	}
 
+	/**
+	 * Interpolation
+	 * @param firstSample
+	 * @param secondSample
+	 * @return
+	 */
 	protected float zeroCrossingPercentage(float firstSample, float secondSample) {
 		// x = x1 + (x2 - x1) * ((0-y1)/(y2-y1))
 		return (-firstSample / (secondSample - firstSample));
 	}
 
+	/**
+	 * Get the derivative of the data in the filtered sample array.
+	 * @return the derivative of the sample array.
+	 */
 	private ArrayList<Float> getDerivativeOfFilteredData() {
 		ArrayList<Float> derivative = new ArrayList<Float>(
-				filteredSampleArray.size());
+				samplesInPacket.size());
 
-		for (int i = 1; i < filteredSampleArray.size() - 1; i++) {
-			derivative.add(filteredSampleArray.get(i + 1)
-					- filteredSampleArray.get(i - 1));
-			if (derivative.size() == 1) {
-				derivative.add(filteredSampleArray.get(i + 1)
-						- filteredSampleArray.get(i - 1));
+		for (int i = 1; i < samplesInPacket.size() - 1; i++) {
+			derivative.add(samplesInPacket.get(i + 1) //y2 - 
+					- samplesInPacket.get(i - 1));  //y1
+			if (derivative.size() == 1) { //Make the derivative array the same size as the input. Add the first point twice.
+				derivative.add(derivative.get(0));
 			}
 		}
-		derivative.add(derivative.get(derivative.size() - 1));
+		derivative.add(derivative.get(derivative.size() - 1)); //Add the last sample twice.
 
 		return derivative;
 	}
 
-	private void shrinkFilteredSampleArray() {
-		int index = filteredSampleArray.size() - 1 - samplesInFlag * 2
+	/**
+	 * Since we process one packet at a time we need to shrink the internal buffer after
+	 * we processes a potential packet or know that there isn't a packet contained within
+	 * the data due to the size.
+	 */
+	private void shrinkSampleArray() {
+		int index = sampleArray.size() - 1 - samplesInFlag * 2
 				- BUFFER_SAMPLES_AFTER_FLAG;
 		if (index < 0)
 			index = 0;
-		filteredSampleArray = new ArrayList<Float>(filteredSampleArray.subList(
-				index, filteredSampleArray.size() - 1));
+		sampleArray = new ArrayList<Float>(sampleArray.subList(
+				index, sampleArray.size() - 1));
 	}
 
+	/**
+	 * Once we receive a sample that completes six consecutive symbols that are the same
+	 * then we have seen a flag. 0x7E = 01111110
+	 * 
+	 * @param sample
+	 * @return
+	 */
 	private boolean containsFlag(float sample) {
 		boolean retVal = false;
 
@@ -392,7 +447,7 @@ public class PreClockingDemodulator extends PacketDemodulator // implements
 
 			int bits = (int) Math.round((double) p / (double) samplesPerBaud);
 
-			if (bits == 7) {
+			if (bits == 7) { //Should this be 6 instead of 7?
 				retVal = true;
 			}
 		}

@@ -42,12 +42,15 @@ import sivantoledo.ax25.Afsk1200Modulator;
 import sivantoledo.ax25.Afsk1200MultiDemodulator;
 import sivantoledo.ax25.Arrays;
 import sivantoledo.ax25.GoertzelDemodulator;
+import sivantoledo.ax25.GoertzelMaxClockingDemodulator;
+import sivantoledo.ax25.GoertzelPreClockingDemodulator;
 import sivantoledo.ax25.Packet;
 import sivantoledo.ax25.PacketDemodulator;
 import sivantoledo.ax25.PacketHandler;
 import sivantoledo.ax25.PeakDemodulator;
-import sivantoledo.ax25.PreClockingDemodulator;
+import sivantoledo.ax25.MixedPreClockingDemodulator;
 import sivantoledo.ax25.StrictZeroCrossingDemodulator;
+import sivantoledo.ax25.ThreadedGoertzelMaxClockingDemodulator;
 import sivantoledo.ax25.WindowedZeroCrossingDemodulator;
 //import sivantoledo.ax25.WindowedZeroCrossingDemodulator;
 import sivantoledo.ax25.ZeroCrossingDemodulator;
@@ -187,23 +190,23 @@ public class Test implements PacketHandler {
 		Afsk1200Modulator mod = null;
 		PacketDemodulator multi = null;
 		try {
-		  //afsk = new Afsk1200(rate,filter_length,0,t);
-		  //multi = new Afsk1200Demodulator(rate,filter_length,0,t);
-//		  multi = new Afsk1200Demodulator(rate,1,0,t);
-//		  multi = new Afsk1200Demodulator(rate,filter_length,0,t);
-//		  multi = new Afsk1200Demodulator(rate,filter_length,3,t);
-//		  multi = new Afsk1200MultiDemodulatorPlus(rate,t);
-//		  multi = new Afsk1200MultiDemodulatorPlus(rate,t);
-
+//			afsk = new Afsk1200(rate,filter_length,0,t);
+//			multi = new Afsk1200Demodulator(rate,filter_length,1,t);
+//			multi = new Afsk1200MultiDemodulatorPlus(rate,t);
+//
 //			multi = new ZeroCrossingDemodulator(rate,filter_length,3,t);
 //			multi = new StrictZeroCrossingDemodulator(rate,filter_length,3,t);
-		//	multi = new PeakDemodulator(rate,filter_length,0,t);
-	//		multi = new GoertzelDemodulator(rate, filter_length, 6, t);
-			multi = new ZeroCrossingDemodulator(rate,filter_length,1,t);
-			//multi = new StrictZeroCrossingDemodulator(rate,filter_length,6,t);
-		//	multi = new PreClockingDemodulator(rate, filter_length,0,t);
-	//		multi = new WindowedZeroCrossingDemodulator(rate, filter_length, 1, t);
-		  mod = new Afsk1200Modulator(rate);
+//			multi = new PeakDemodulator(rate,filter_length,0,t);
+//			multi = new GoertzelDemodulator(rate, filter_length, 6, t);
+//			multi = new ZeroCrossingDemodulator(rate,filter_length,1,t);
+//			multi = new StrictZeroCrossingDemodulator(rate,filter_length,6,t);
+//			multi = new MixedPreClockingDemodulator(rate, filter_length,0,t);
+//			multi = new GoertzelPreClockingDemodulator(rate, filter_length,1,t);
+//			multi = new GoertzelMaxClockingDemodulator(rate, filter_length,1,t);
+			multi = new ThreadedGoertzelMaxClockingDemodulator(rate, filter_length,1,t);
+//			multi = new WindowedZeroCrossingDemodulator(rate, filter_length, 1, t);
+			
+			mod = new Afsk1200Modulator(rate);
 		} catch (Exception e) {
 			System.out.println("Exception trying to create an Afsk1200 object: "+e.getMessage());
 			System.exit(1);

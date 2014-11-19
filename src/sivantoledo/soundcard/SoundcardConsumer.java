@@ -23,7 +23,7 @@ package sivantoledo.soundcard;
 public abstract class SoundcardConsumer {
 	
 	private static final int DEBUG = -1;
-	int   sample_rate;
+	protected int   sample_rate;
 	float peak = 0.0f;
 	float decay;
 	//private final float oneovermax = 1.0f/32768.0f;
