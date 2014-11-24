@@ -33,10 +33,11 @@ sample_rate = 48000.0 # sampling frequency
 pll_integral = 0
 pll_lock = 0
 pll_cf = 1700
-pll_loop_gain = 4
+pll_loop_gain = 1
 ref_sig = 0
 
-invsqr2 = 1.0 / math.sqrt(2.0)
+#invsqr2 = 1.0 / math.sqrt(2.0)
+invsqr2 = 4.0
 
 output_lowpass = Biquad(20,2200,invsqr2)
 
@@ -48,7 +49,7 @@ pllCont = []
 myData = genfromtxt('gen200_200samples.csv', delimiter=",")
 
 
-for n in range(0,len(myData)):
+for n in range(0,4*len(myData)):
   t = n / sample_rate
   
   # BEGIN test signal bloc
