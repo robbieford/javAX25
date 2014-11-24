@@ -20,45 +20,76 @@
 # *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 # ***************************************************************************
 
-import math
+from biquad_module import Biquad
 
-class Biquad:
+from pylab import *
 
-  def __init__(self, freq, srate, Q, dbGain = 0):
-      freq = float(freq)
-      self.srate = float(srate)
-      Q = float(Q)
-      dbGain = float(dbGain)
-      self.a0 = self.a1 = self.a2 = 0
-      self.b0 = self.b1 = self.b2 = 0
-      self.x1 = self.x2 = 0
-      self.y1 = self.y2 = 0
-      # only used for peaking and shelving filter types
-      A = math.pow(10, dbGain / 40)
-      omega = 2 * math.pi * freq / self.srate
-      sn = math.sin(omega)
-      cs = math.cos(omega)
-      alpha = sn / (2*Q)
-      beta = math.sqrt(A + A)
-      self.lowpass(A,omega,sn,cs,alpha,beta)
-      # prescale constants
-      self.b0 /= self.a0
-      self.b1 /= self.a0
-      self.b2 /= self.a0
-      self.a1 /= self.a0
-      self.a2 /= self.a0
+from numpy import genfromtxt
 
-  def lowpass(self,A,omega,sn,cs,alpha,beta):
-    self.b0 = (1 - cs) /2
-    self.b1 = 1 - cs
-    self.b2 = (1 - cs) /2
-    self.a0 = 1 + alpha
-    self.a1 = -2 * cs
-    self.a2 = 1 - alpha
-    
-  # perform filtering function
-  def __call__(self,x):
-    y = self.b0 * x + self.b1 * self.x1 + self.b2 * self.x2 - self.a1 * self.y1 - self.a2 * self.y2
-    self.x2, self.x1 = self.x1, x
-    self.y2, self.y1 = self.y1, y
-    return y
+import re
+
+sample_rate = 48000.0 # sampling frequency
+
+pll_integral = 0
+pll_lock = 0
+pll_cf = 1700
+pll_loop_gain = 4
+ref_sig = 0
+
+invsqr2 = 1.0 / math.sqrt(2.0)
+
+output_lowpass = Biquad(20,2200,invsqr2)
+
+fa = []
+da = []
+testSig = []
+pllCont = []
+
+myData = genfromtxt('gen200_200samples.csv', delimiter=",")
+
+
+for n in range(0,len(myData)):
+  t = n / sample_rate
+  
+  # BEGIN test signal bloc
+  test_signal = myData[n%len(myData)]
+  # END test signal block
+  
+  # BEGIN PLL block
+  pll_loop_control = test_signal * ref_sig * pll_loop_gain
+  output = output_lowpass(pll_loop_control)
+  pll_integral += pll_loop_control / sample_rate
+  ref_sig = math.sin(2 * math.pi * pll_cf * (t + pll_integral))
+  # END PLL block
+  
+  fa.append(n)
+  da.append(output*20)
+  testSig.append(test_signal)
+  pllCont.append(pll_loop_control/2)
+
+pllAvg = []
+
+for n in range(0, len(pllCont)):
+  if n < 20:
+    pllAvg.append(0)
+  else:
+    sum = 0
+    for j in range(-20, 0):
+      sum+=pllCont[n+j]
+    pllAvg.append(sum / 5)
+
+
+plot(fa, testSig, 'g', fa, da, 'b')#, fa, pllAvg, 'r')
+#ylim(-1,1)
+#grid(True)
+#locs, labels = xticks()
+#setp(labels,fontsize=8)
+#locs, labels = yticks()
+#setp(labels,fontsize=8)
+#yticks([-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1])
+gcf().set_size_inches(4,3)
+
+name = re.sub('.*?(\w+).*','\\1',sys.argv[0])
+#savefig(name+'.png')
+
+show()
