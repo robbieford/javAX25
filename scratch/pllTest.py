@@ -39,14 +39,14 @@ ref_sig = 0
 #invsqr2 = 1.0 / math.sqrt(2.0)
 invsqr2 = 4.0
 
-output_lowpass = Biquad(20,2200,invsqr2)
+output_lowpass = Biquad(20,3000,invsqr2)
 
 fa = []
 da = []
 testSig = []
 pllCont = []
 
-myData = genfromtxt('gen200_200samples.csv', delimiter=",")
+myData = genfromtxt('noise.csv', delimiter=",")
 
 
 for n in range(0,4*len(myData)):

@@ -24,23 +24,25 @@ import math
 
 class Biquad:
 
-  def __init__(self, freq, srate, Q, dbGain = 0):
+  def __init__(self, freq, srate, Q):
       freq = float(freq)
       self.srate = float(srate)
       Q = float(Q)
-      dbGain = float(dbGain)
       self.a0 = self.a1 = self.a2 = 0
       self.b0 = self.b1 = self.b2 = 0
       self.x1 = self.x2 = 0
       self.y1 = self.y2 = 0
       # only used for peaking and shelving filter types
-      A = math.pow(10, dbGain / 40)
       omega = 2 * math.pi * freq / self.srate
       sn = math.sin(omega)
       cs = math.cos(omega)
       alpha = sn / (2*Q)
-      beta = math.sqrt(A + A)
-      self.lowpass(A,omega,sn,cs,alpha,beta)
+      self.b0 = (1 - cs) /2
+      self.b1 = 1 - cs
+      self.b2 = (1 - cs) /2
+      self.a0 = 1 + alpha
+      self.a1 = -2 * cs
+      self.a2 = 1 - alpha
       # prescale constants
       self.b0 /= self.a0
       self.b1 /= self.a0
@@ -48,13 +50,7 @@ class Biquad:
       self.a1 /= self.a0
       self.a2 /= self.a0
 
-  def lowpass(self,A,omega,sn,cs,alpha,beta):
-    self.b0 = (1 - cs) /2
-    self.b1 = 1 - cs
-    self.b2 = (1 - cs) /2
-    self.a0 = 1 + alpha
-    self.a1 = -2 * cs
-    self.a2 = 1 - alpha
+#  def lowpass(self,A,omega,sn,cs,alpha,beta):
     
   # perform filtering function
   def __call__(self,x):
