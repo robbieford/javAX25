@@ -1,7 +1,7 @@
 fontSize = 25;
 
 %y = value...?
-fle = wavread('.\..\..\nogit\generated200packets_48000.wav');
+fle = wavread('.\..\..\nogit\Gen200_32bit_48000Hz.wav');
 y = fle(362001:362500);
 
 f = figure('Position',[0,0,1280,1024]);

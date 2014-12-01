@@ -44,6 +44,7 @@ import sivantoledo.ax25.Arrays;
 import sivantoledo.ax25.GoertzelDemodulator;
 import sivantoledo.ax25.GoertzelMaxClockingDemodulator;
 import sivantoledo.ax25.GoertzelPreClockingDemodulator;
+import sivantoledo.ax25.PLLDemodulator;
 import sivantoledo.ax25.Packet;
 import sivantoledo.ax25.PacketDemodulator;
 import sivantoledo.ax25.PacketHandler;
@@ -203,8 +204,9 @@ public class Test implements PacketHandler {
 //			multi = new MixedPreClockingDemodulator(rate, filter_length,0,t);
 //			multi = new GoertzelPreClockingDemodulator(rate, filter_length,1,t);
 //			multi = new GoertzelMaxClockingDemodulator(rate, filter_length,1,t);
-			multi = new ThreadedGoertzelMaxClockingDemodulator(rate, filter_length,1,t);
+//			multi = new ThreadedGoertzelMaxClockingDemodulator(rate, filter_length,1,t);
 //			multi = new WindowedZeroCrossingDemodulator(rate, filter_length, 1, t);
+			multi = new PLLDemodulator(rate, filter_length, 1, t);
 			
 			mod = new Afsk1200Modulator(rate);
 		} catch (Exception e) {

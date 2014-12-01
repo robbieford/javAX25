@@ -1,7 +1,7 @@
 fontSize = 25;
 
 %y = value...?
-fle = wavread('.\..\..\nogit\ot3testwnoise4800MonoTrue.wav');
+fle = wavread('.\..\..\nogit\OT3wNoise_32bit_48000Hz.wav');
 y = fle(220001:220500);
 
 f = figure('Position',[0,0,1280,1024]);
