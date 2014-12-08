@@ -33,23 +33,24 @@ sample_rate = 48000.0 # sampling frequency
 pll_integral = 0
 pll_lock = 0
 pll_cf = 1700
-pll_loop_gain = 1
+pll_loop_gain = 4
 ref_sig = 0
 
-#invsqr2 = 1.0 / math.sqrt(2.0)
-invsqr2 = 4.0
+invsqr2 = 1.0 / math.sqrt(2.0)
+#invsqr2 = 4.0
 
-output_lowpass = Biquad(20,3000,invsqr2)
+output_lowpass = Biquad(300,48000,invsqr2)
 
 fa = []
 da = []
 testSig = []
 pllCont = []
 
-myData = genfromtxt('noise.csv', delimiter=",")
+#myData = genfromtxt('noise.csv', delimiter=",")
+myData = genfromtxt('gen200Packet.csv', delimiter=",")
+#myData = genfromtxt('noisePacket.csv', delimiter=",")
 
-
-for n in range(0,4*len(myData)):
+for n in range(0,len(myData)):
   t = n / sample_rate
   
   # BEGIN test signal bloc
@@ -66,21 +67,21 @@ for n in range(0,4*len(myData)):
   fa.append(n)
   da.append(output*20)
   testSig.append(test_signal)
-  pllCont.append(pll_loop_control/2)
+  pllCont.append(pll_loop_control*8)
 
 pllAvg = []
 
 for n in range(0, len(pllCont)):
-  if n < 20:
+  if n < 13:
     pllAvg.append(0)
   else:
     sum = 0
-    for j in range(-20, 0):
+    for j in range(-13, 0):
       sum+=pllCont[n+j]
-    pllAvg.append(sum / 5)
+    pllAvg.append(sum / 13)
 
 
-plot(fa, testSig, 'g', fa, da, 'b')#, fa, pllAvg, 'r')
+plot(fa, testSig, 'g', fa, da, 'b', fa, pllCont, 'r')
 #ylim(-1,1)
 #grid(True)
 #locs, labels = xticks()
