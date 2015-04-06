@@ -196,7 +196,7 @@ public class MaxClockingThread implements Callable<byte[]> {
 	}
 
 	/**
-	 * Once bits have been demodualted pass to this function to construct the
+	 * Once bits have been demodulated pass to this function to construct the
 	 * packet.
 	 * 
 	 * @param bits
