@@ -30,7 +30,7 @@ public class GoertzelDemodulator extends PacketDemodulator // implements
 	private final static String GOERTZEL = "Goertzel";
 
 	public String getDemodulatorName() {
-		return GOERTZEL + "-w_emphasis_" + emphasis;
+		return GOERTZEL + windowSize + "-w_emphasis_" + emphasis;
 	}
 
 	private static final int DEBUG = -1;
@@ -57,6 +57,20 @@ public class GoertzelDemodulator extends PacketDemodulator // implements
 
 		this.samplesPerBit = (float) sample_rate / 1200.0f;
 		this.windowSize = (int)Math.round(Math.floor(samplesPerBit));
+		window = new ArrayList<Float>(windowSize);
+	    this.normalized1200Freq = 1200f/sample_rate;
+	    this.normalized2200Freq = 2200f/sample_rate;
+	    this.coeff1200 = 2*Math.cos(2*Math.PI*normalized1200Freq);
+	    this.coeff2200 = 2*Math.cos(2*Math.PI*normalized2200Freq);
+	    this.currentFreq = Frequency.f_1200;
+	}
+
+	public GoertzelDemodulator(int sample_rate, int filter_length,
+			int emphasis, PacketHandler h, double windowSizeInPercent) throws Exception {
+		super(sample_rate, filter_length, emphasis, h);
+
+		this.samplesPerBit = (float) sample_rate / 1200.0f;
+		this.windowSize = (int)Math.round(Math.floor(samplesPerBit) * windowSizeInPercent);
 		window = new ArrayList<Float>(windowSize);
 	    this.normalized1200Freq = 1200f/sample_rate;
 	    this.normalized2200Freq = 2200f/sample_rate;
