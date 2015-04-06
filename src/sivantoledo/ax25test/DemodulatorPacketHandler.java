@@ -1,6 +1,7 @@
 package sivantoledo.ax25test;
 
 import java.util.ArrayList;
+import java.util.Queue;
 
 import sivantoledo.ax25.Arrays;
 import sivantoledo.ax25.Packet;
@@ -9,8 +10,28 @@ import sivantoledo.ax25.PacketHandler;
 
 public class DemodulatorPacketHandler implements PacketHandler {
 	
-	private int packetCount;
+	private int packetCount = 0;
 	private PacketArray packets = new PacketArray();
+	byte[] last;
+	int dup_count = 0;
+	boolean sufficientSamplesElapsed = true;
+	boolean pokedOnce = false;
+	
+	//Using the two booleans this allows us to make sure that between 100-200 samples
+	//have elapsed before we set sufficientSamplesElapsed to true. Assuming called
+	//once every 100 samples. 
+	public void poke()
+	{
+		if (pokedOnce == true)
+		{
+		sufficientSamplesElapsed  = true;
+		pokedOnce = false;
+		}
+		else if (sufficientSamplesElapsed == false)
+		{
+			pokedOnce = true;
+		}
+	}
 	
 	private static final int DEBUG = 0;
 	
@@ -19,10 +40,16 @@ public class DemodulatorPacketHandler implements PacketHandler {
 		if (DEBUG > 1)
 			System.out.println(Packet.format(packet));
 		
-		if (!packets.contains(packet))
-		{
+		if (last!=null && Arrays.equals(last, packet) && !sufficientSamplesElapsed) {
+			dup_count++;
+			System.out.printf("Duplicate, %d so far\n",dup_count);
+		} else {
 			packetCount++;
+			if (DEBUG > 2)
+				System.out.println("Packet Count:"+packetCount);
 			packets.add(packet);
+			last = packet;
+			sufficientSamplesElapsed = false;
 		}
 	}
 
@@ -39,7 +66,7 @@ public class DemodulatorPacketHandler implements PacketHandler {
 	}
 	
 	public int getUniquePacketsDecoded(ArrayList<DemodulatorPacketHandler> allDemodPktHndlrs) {
-		int uniquePackets = packetCount;
+		int uniquePackets = packets.size();
 		
 		PacketArray duplicatePacketsFound = new PacketArray();
 		PacketArray othersPackets;
@@ -56,6 +83,13 @@ public class DemodulatorPacketHandler implements PacketHandler {
 			}
 		}
 		
-		return uniquePackets;
+		PacketArray dupChecker = new PacketArray();
+		for (byte[] packet : packets)
+		{
+			dupChecker.addWithReturn(packet);
+		}
+		int dupTotal = dupChecker.dupCount + dupChecker.packet_count;
+		//System.out.println("Total Packets: " + packets.size() + " / " + dupTotal + " Unique: " + dupChecker.packet_count + " duplicates: " + dupChecker.dupCount);
+		return uniquePackets - dupChecker.dupCount;
 	}
 }

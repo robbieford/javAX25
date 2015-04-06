@@ -43,6 +43,7 @@ import sivantoledo.ax25.Afsk1200Demodulator;
 import sivantoledo.ax25.GoertzelDemodulator;
 import sivantoledo.ax25.GoertzelMaxClockingDemodulator;
 import sivantoledo.ax25.GoertzelPreClockingDemodulator;
+import sivantoledo.ax25.PLLDemodulator;
 import sivantoledo.ax25.Packet;
 import sivantoledo.ax25.PacketDemodulator;
 import sivantoledo.ax25.PeakDemodulator;
@@ -92,22 +93,22 @@ public class DemodulatorTest {
 		//What emphasis filters would you like to include?
 		ArrayList<Integer> emphasises = new ArrayList<Integer>();
 		emphasises.add(-1); //No filtering
-		emphasises.add(0); //Band pass filter
-		emphasises.add(6); //6dB emphasis filter
+//		emphasises.add(0); //Band pass filter
+//		emphasises.add(6); //6dB emphasis filter
 		
 
 		// Path to all of the audio files we want to use in this test
 		ArrayList<String> audioFilePaths = new ArrayList<String>();
-		audioFilePaths.add("./nogit/OT3Test_32bit_48000Hz.wav");
-		audioFilePaths.add("./nogit/Gen200_32bit_48000Hz.wav");
-		audioFilePaths.add("./nogit/OT3wNoise_32bit_48000Hz.wav");
+//		audioFilePaths.add("./nogit/OT3Test_32bit_48000Hz.wav");
+//		audioFilePaths.add("./nogit/Gen200_32bit_48000Hz.wav");
+//		audioFilePaths.add("./nogit/OT3wNoise_32bit_48000Hz.wav");
 		audioFilePaths.add("./nogit/01Track_32bit_48000Hz.wav");
-		audioFilePaths.add("./nogit/02Track_32bit_48000Hz.wav");
+//		audioFilePaths.add("./nogit/02Track_32bit_48000Hz.wav");
 
 		ArrayList<PacketDemodulator> demodulators = new ArrayList<PacketDemodulator>();
 		HashMap<String, DemodulatorPacketHandler> packetHandlers = new HashMap<String, DemodulatorPacketHandler>();
 
-		int filterLength = 80, rate;
+		int filterLength = 32, rate;
 		// Counter for audio files
 		int testNum = 1;
 
@@ -188,15 +189,15 @@ public class DemodulatorTest {
 			try {
 				for (int emphasis : emphasises)
 				{
-//					packetHandler = new DemodulatorPacketHandler();
-//					demodulator = new Afsk1200Demodulator(rate, filterLength, emphasis,
-//							packetHandler);
-//					demodulators.add(demodulator);
-//					packetHandlers.put(demodulator.getDemodulatorName(),
-//							packetHandler);
-//					allDemodPktHndlrs.add(packetHandler);
-//					System.out.println("Created demodulator: "
-//							+ demodulator.getDemodulatorName());
+					packetHandler = new DemodulatorPacketHandler();
+					demodulator = new Afsk1200Demodulator(rate, filterLength, emphasis,
+							packetHandler);
+					demodulators.add(demodulator);
+					packetHandlers.put(demodulator.getDemodulatorName(),
+							packetHandler);
+					allDemodPktHndlrs.add(packetHandler);
+					System.out.println("Created demodulator: "
+							+ demodulator.getDemodulatorName());
 //	
 //					packetHandler = new DemodulatorPacketHandler();
 //					demodulator = new ZeroCrossingDemodulator(rate, filterLength,
@@ -207,7 +208,7 @@ public class DemodulatorTest {
 //					allDemodPktHndlrs.add(packetHandler);
 //					System.out.println("Created demodulator: "
 //							+ demodulator.getDemodulatorName());
-//	
+	
 //					packetHandler = new DemodulatorPacketHandler();
 //					demodulator = new StrictZeroCrossingDemodulator(rate,
 //							filterLength, emphasis, packetHandler);
@@ -217,7 +218,7 @@ public class DemodulatorTest {
 //					allDemodPktHndlrs.add(packetHandler);
 //					System.out.println("Created demodulator: "
 //							+ demodulator.getDemodulatorName());
-//	
+	
 //					packetHandler = new DemodulatorPacketHandler();
 //					demodulator = new WindowedZeroCrossingDemodulator(rate,
 //							filterLength, emphasis, packetHandler);
@@ -227,57 +228,7 @@ public class DemodulatorTest {
 //					allDemodPktHndlrs.add(packetHandler);
 //					System.out.println("Created demodulator: "
 //							+ demodulator.getDemodulatorName());
-//	
-//					packetHandler = new DemodulatorPacketHandler();
-//					demodulator = new MixedPreClockingDemodulator(rate, filterLength, emphasis,
-//							packetHandler);
-//					demodulators.add(demodulator);
-//					packetHandlers.put(demodulator.getDemodulatorName(),
-//							packetHandler);
-//					allDemodPktHndlrs.add(packetHandler);
-//					System.out.println("Created demodulator: "
-//							+ demodulator.getDemodulatorName());
-//	
-//					packetHandler = new DemodulatorPacketHandler();
-//					demodulator = new GoertzelPreClockingDemodulator(rate, filterLength, emphasis,
-//							packetHandler);
-//					demodulators.add(demodulator);
-//					packetHandlers.put(demodulator.getDemodulatorName(),
-//							packetHandler);
-//					allDemodPktHndlrs.add(packetHandler);
-//					System.out.println("Created demodulator: "
-//							+ demodulator.getDemodulatorName());
-//	
-					packetHandler = new DemodulatorPacketHandler();
-					demodulator = new GoertzelMaxClockingDemodulator(rate, filterLength, emphasis,
-							packetHandler);
-					demodulators.add(demodulator);
-					packetHandlers.put(demodulator.getDemodulatorName(),
-							packetHandler);
-					allDemodPktHndlrs.add(packetHandler);
-					System.out.println("Created demodulator: "
-							+ demodulator.getDemodulatorName());
-//	
-//					packetHandler = new DemodulatorPacketHandler();
-//					demodulator = new ThreadedGoertzelMaxClockingDemodulator(rate, filterLength, emphasis,
-//							packetHandler);
-//					demodulators.add(demodulator);
-//					packetHandlers.put(demodulator.getDemodulatorName(),
-//							packetHandler);
-//					allDemodPktHndlrs.add(packetHandler);
-//					System.out.println("Created demodulator: "
-//							+ demodulator.getDemodulatorName());
-//	
-//					packetHandler = new DemodulatorPacketHandler();
-//					demodulator = new GoertzelDemodulator(rate, filterLength, emphasis,
-//							packetHandler);
-//					demodulators.add(demodulator);
-//					packetHandlers.put(demodulator.getDemodulatorName(),
-//							packetHandler);
-//					allDemodPktHndlrs.add(packetHandler);
-//					System.out.println("Created demodulator: "
-//							+ demodulator.getDemodulatorName());
-//	
+	
 //					packetHandler = new DemodulatorPacketHandler();
 //					demodulator = new PeakDemodulator(rate, filterLength, emphasis,
 //							packetHandler);
@@ -287,6 +238,101 @@ public class DemodulatorTest {
 //					allDemodPktHndlrs.add(packetHandler);
 //					System.out.println("Created demodulator: "
 //							+ demodulator.getDemodulatorName());
+					
+//					packetHandler = new DemodulatorPacketHandler();
+//					demodulator = new MixedPreClockingDemodulator(rate, filterLength, emphasis,
+//							packetHandler);
+//					demodulators.add(demodulator);
+//					packetHandlers.put(demodulator.getDemodulatorName(),
+//							packetHandler);
+//					allDemodPktHndlrs.add(packetHandler);
+//					System.out.println("Created demodulator: "
+//							+ demodulator.getDemodulatorName());
+	
+//					packetHandler = new DemodulatorPacketHandler();
+//					demodulator = new GoertzelPreClockingDemodulator(rate, filterLength, emphasis,
+//							packetHandler);
+//					demodulators.add(demodulator);
+//					packetHandlers.put(demodulator.getDemodulatorName(),
+//							packetHandler);
+//					allDemodPktHndlrs.add(packetHandler);
+//					System.out.println("Created demodulator: "
+//							+ demodulator.getDemodulatorName());
+	
+//					for (int index = -1; index <= 45; index++)
+//					{
+//						for (float windSize = -0.5f; windSize <2; windSize += 0.025)
+//						{
+//							packetHandler = new DemodulatorPacketHandler();
+//							demodulator = new GoertzelPreClockingDemodulator(rate, filterLength, emphasis,
+//									packetHandler, windSize, index);
+//							demodulators.add(demodulator);
+//							packetHandlers.put(demodulator.getDemodulatorName(),
+//									packetHandler);
+//							allDemodPktHndlrs.add(packetHandler);
+//							System.out.println("Created demodulator: "
+//									+ demodulator.getDemodulatorName());
+//						}
+//					}
+	
+//					packetHandler = new DemodulatorPacketHandler();
+//					demodulator = new GoertzelMaxClockingDemodulator(rate, filterLength, emphasis,
+//							packetHandler);
+//					demodulators.add(demodulator);
+//					packetHandlers.put(demodulator.getDemodulatorName(),
+//							packetHandler);
+//					allDemodPktHndlrs.add(packetHandler);
+//					System.out.println("Created demodulator: "
+//							+ demodulator.getDemodulatorName());
+//	
+//					packetHandler = new DemodulatorPacketHandler();
+//					demodulator = new ThreadedGoertzelMaxClockingDemodulator(rate, filterLength, emphasis,
+//							packetHandler);
+//					demodulators.add(demodulator);
+//					packetHandlers.put(demodulator.getDemodulatorName(),
+//							packetHandler);
+//					allDemodPktHndlrs.add(packetHandler);
+//					System.out.println("Created demodulator: "
+//							+ demodulator.getDemodulatorName
+					
+					for (float windSize = 0.6f; windSize <= 2; windSize+= 0.025)
+					{
+						packetHandler = new DemodulatorPacketHandler();
+						demodulator = new GoertzelDemodulator(rate, filterLength, emphasis,
+								packetHandler, windSize);
+						demodulators.add(demodulator);
+						packetHandlers.put(demodulator.getDemodulatorName(),
+								packetHandler);
+						allDemodPktHndlrs.add(packetHandler);
+						System.out.println("Created demodulator: "
+								+ demodulator.getDemodulatorName());
+					}
+					
+//					packetHandler = new DemodulatorPacketHandler();
+//					demodulator = new PLLDemodulator(rate, filterLength, emphasis,
+//							packetHandler);
+//					demodulators.add(demodulator);
+//					packetHandlers.put(demodulator.getDemodulatorName(),
+//							packetHandler);
+//					allDemodPktHndlrs.add(packetHandler);
+//					System.out.println("Created demodulator: "
+//							+ demodulator.getDemodulatorName());
+//					
+					for (int loopGain = 0; loopGain <= 10; loopGain++)
+					{
+						for (float filtFreq = 350; filtFreq <= 600; filtFreq += 5)
+						{
+							packetHandler = new DemodulatorPacketHandler();
+							demodulator = new PLLDemodulator(rate, filterLength, emphasis,
+									packetHandler, loopGain, filtFreq);
+							demodulators.add(demodulator);
+							packetHandlers.put(demodulator.getDemodulatorName(),
+									packetHandler);
+							allDemodPktHndlrs.add(packetHandler);
+							System.out.println("Created demodulator: "
+									+ demodulator.getDemodulatorName());
+						}
+					}
 				}
 			} catch (Exception e) {
 				System.out
@@ -341,7 +387,7 @@ public class DemodulatorTest {
 					// Something to show that progress is being made with the
 					// tests
 					samplesSinceLastDot++;
-					if (samplesSinceLastDot == 100000) {
+					if (samplesSinceLastDot == 10000) {
 						samplesSinceLastDot = 0;
 						if (cursorPosition == 76) {
 							System.out.print("\n");
@@ -354,6 +400,11 @@ public class DemodulatorTest {
 
 					for (PacketDemodulator pktDemod : demodulators) {
 						pktDemod.addSamples(f, 1);
+						if (samplesSinceLastDot % 100 == 0)
+						{
+							packetHandler = packetHandlers.get(pktDemod.getDemodulatorName());
+							packetHandler.poke();
+						}
 					}
 				}
 
