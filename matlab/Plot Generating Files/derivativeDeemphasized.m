@@ -1,4 +1,4 @@
-fontSize = 25;
+fontSize = 20;
 
 x = linspace(0,200,200);
 y1 = sin(2*pi*x/40);
@@ -30,8 +30,8 @@ adjustedRange = 0.55*rangeY;
 minY = (center - adjustedRange);
 maxY = (center + adjustedRange);
 ylim([minY maxY]);
-set(gca,'FontSize',fontSize,'fontWeight','bold');
-set(findall(gcf,'type','text'),'FontSize',fontSize,'fontWeight','bold');
+set(gca,'FontSize',fontSize, 'FontName', 'Times New Roman');
+set(findall(gcf,'type','text'),'FontSize',fontSize, 'FontName', 'Times New Roman');
 yL = get(gca,'YLim');
 xL = get(gca,'XLim');
 line(xL,[0 0],'Color','black');

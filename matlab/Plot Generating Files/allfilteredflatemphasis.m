@@ -1,4 +1,4 @@
-fontSize = 25;
+fontSize = 20;
 
 % Correlation-w_emphasis_0......................24............1
 % ZeroCrossing-w_emphasis_0.....................3............0
@@ -16,13 +16,13 @@ filename = 'Performance of All Demodulators on OT3 Test with Noise';
 title(filename);
 xlabel('Demodulator');
 ylabel('Number of Packets Decoded');
-set(gca,'FontSize',fontSize,'fontWeight','bold');
 set(gca,'XTickLabel',{'Correlation', 'Zero Crossing', 'Strict Zero Crossing', 'Windowed Zero Crossing', 'Preclocking', 'Goertzel', 'Peak'})
-set(findall(gcf,'type','text'),'FontSize',fontSize,'fontWeight','bold');
+set(gca,'FontSize',fontSize, 'FontName', 'Times New Roman');
+set(findall(gcf,'type','text'),'FontSize',fontSize, 'FontName', 'Times New Roman');
 rotateXLabels(gca, 45)
 set(gca, 'xtick', [])
 grid on
 saveas(f, strcat('.\..\..\..\rrxthesis\images\',regexprep(filename,'[^\w'']',''),'.png'));
-% pause();
-% close(f);
-% clear all;
+pause();
+close(f);
+clear all;

@@ -1,20 +1,13 @@
-fontSize = 25;
+fontSize = 20;
 
 x = linspace(0,200,200);
 y1 = sin(2*pi*x/40);
-y2 = sin(2*pi*x/(1/2200*48000))*0.5;
-% y = cat(2, y1(1:40), y2(1:40), y1(34:73), y2(20:59),y1(30:69));
-y = cat(2, y1(1:40), y2(1:40), y1(34:73), y2(19:58),y1(68:107));
-y3 = x;
-y3(2) = y3(3);
-y3(1) = y3(2);
-y3(199) = y3(198);
-y3(200) = y3(199);
+y2 = sin(2*pi*x/(1/2200*48000));
+y = cat(2, y1(1:40), y2(1:40), y1(34:73), y2(20:59),y1(30:69));
+
 f = figure('Position',[0,0,1280,1024]);
 set(gcf,'color','w');
-x1 = cat(2, x(1:78), x(82:200));
-yn1 = cat(2, y(1:78),y(82:200));
-plot(x1, yn1);
+plot(x, y);
 filename = 'Data signal encoding bitstream 0000';
 title(filename);
 xlabel('Sample Number');
@@ -27,8 +20,8 @@ adjustedRange = 0.55*rangeY;
 minY = (center - adjustedRange);
 maxY = (center + adjustedRange);
 ylim([minY maxY]);
-set(gca,'FontSize',fontSize,'fontWeight','bold');
-set(findall(gcf,'type','text'),'FontSize',fontSize,'fontWeight','bold');
+set(gca,'FontSize',fontSize, 'FontName', 'Times New Roman');
+set(findall(gcf,'type','text'),'FontSize',fontSize, 'FontName', 'Times New Roman');
 yL = get(gca,'YLim');
 line([40 40],yL,'Color','r');
 line([80 80],yL,'Color','r');
