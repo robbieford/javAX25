@@ -24,14 +24,16 @@ import java.util.ArrayList;
 import sivantoledo.ax25.PacketDemodulator.Frequency;
 
 public class GoertzelPreClockingDemodulator extends PacketDemodulator // implements
-																// HalfduplexSoundcardClient
+// HalfduplexSoundcardClient
 {
 	/**
 	 * Class name items...
 	 */
-	private final static String PRECLOCKING = "GoertzelPreclockingDemodulator";
+	private final static String PRECLOCKING = "GoertzelPreclockDemod";
+
 	public String getDemodulatorName() {
-		return PRECLOCKING + "-w_emphasis_" + emphasis;
+		return PRECLOCKING + combIdx + "_" + overlap + "-w_emphasis_"
+				+ emphasis;
 	}
 
 	private float samplesPerBaud;
@@ -39,9 +41,11 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 	float ZERO_CROSSING_THRESHOLD;
 	private ArrayList<Float> window;
 	private float normalized1200Freq;
-    private float normalized2200Freq;
-    private float coeff1200;
-    private float coeff2200;
+	private float normalized2200Freq;
+	private float coeff1200;
+	private float coeff2200;
+	private float overlap = 0;
+	private int combIdx = -1;
 
 	public GoertzelPreClockingDemodulator(int sample_rate, int filter_length)
 			throws Exception {
@@ -53,17 +57,84 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 		super(sample_rate, filter_length, emphasis, h);
 
 		window = new ArrayList<Float>();
-	    this.normalized1200Freq = 1200f/sample_rate;
-	    this.normalized2200Freq = 2200f/sample_rate;
-	    this.coeff1200 = (float) (2*Math.cos(2*Math.PI*normalized1200Freq));
-	    this.coeff2200 = (float) (2*Math.cos(2*Math.PI*normalized2200Freq));
+		this.normalized1200Freq = 1200f / sample_rate;
+		this.normalized2200Freq = 2200f / sample_rate;
+		this.coeff1200 = (float) (2 * Math
+				.cos(2 * Math.PI * normalized1200Freq));
+		this.coeff2200 = (float) (2 * Math
+				.cos(2 * Math.PI * normalized2200Freq));
 
 		new ArrayList<Float>();
-														// the filter
+		// the filter
 		sampleArray = new ArrayList<Float>();
 
 		this.samplesPerBaud = (float) sample_rate / 1200.0f;
 		samplesInFlag = Math.round(samplesPerBaud * FLAG_LENGTH_IN_BAUD);
+	}
+
+	public GoertzelPreClockingDemodulator(int sample_rate, int filter_length,
+			int emphasis, PacketHandler h, float overlap) throws Exception {
+		super(sample_rate, filter_length, emphasis, h);
+
+		window = new ArrayList<Float>();
+		this.normalized1200Freq = 1200f / sample_rate;
+		this.normalized2200Freq = 2200f / sample_rate;
+		this.coeff1200 = (float) (2 * Math
+				.cos(2 * Math.PI * normalized1200Freq));
+		this.coeff2200 = (float) (2 * Math
+				.cos(2 * Math.PI * normalized2200Freq));
+
+		new ArrayList<Float>();
+		// the filter
+		sampleArray = new ArrayList<Float>();
+
+		this.samplesPerBaud = (float) sample_rate / 1200.0f;
+		samplesInFlag = Math.round(samplesPerBaud * FLAG_LENGTH_IN_BAUD);
+		this.overlap = overlap;
+	}
+
+	public GoertzelPreClockingDemodulator(int sample_rate, int filter_length,
+			int emphasis, PacketHandler h, int combIdx) throws Exception {
+		super(sample_rate, filter_length, emphasis, h);
+
+		window = new ArrayList<Float>();
+		this.normalized1200Freq = 1200f / sample_rate;
+		this.normalized2200Freq = 2200f / sample_rate;
+		this.coeff1200 = (float) (2 * Math
+				.cos(2 * Math.PI * normalized1200Freq));
+		this.coeff2200 = (float) (2 * Math
+				.cos(2 * Math.PI * normalized2200Freq));
+
+		new ArrayList<Float>();
+		// the filter
+		sampleArray = new ArrayList<Float>();
+
+		this.samplesPerBaud = (float) sample_rate / 1200.0f;
+		samplesInFlag = Math.round(samplesPerBaud * FLAG_LENGTH_IN_BAUD);
+		this.combIdx = combIdx;
+	}
+
+	public GoertzelPreClockingDemodulator(int sample_rate, int filter_length,
+			int emphasis, PacketHandler h, float overlap, int combIdx)
+			throws Exception {
+		super(sample_rate, filter_length, emphasis, h);
+
+		window = new ArrayList<Float>();
+		this.normalized1200Freq = 1200f / sample_rate;
+		this.normalized2200Freq = 2200f / sample_rate;
+		this.coeff1200 = (float) (2 * Math
+				.cos(2 * Math.PI * normalized1200Freq));
+		this.coeff2200 = (float) (2 * Math
+				.cos(2 * Math.PI * normalized2200Freq));
+
+		new ArrayList<Float>();
+		// the filter
+		sampleArray = new ArrayList<Float>();
+
+		this.samplesPerBaud = (float) sample_rate / 1200.0f;
+		samplesInFlag = Math.round(samplesPerBaud * FLAG_LENGTH_IN_BAUD);
+		this.overlap = overlap;
+		this.combIdx = combIdx;
 	}
 
 	/**
@@ -76,7 +147,7 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 
 	private ArrayList<Float> sampleArray;
 	private static final int MINIMUM_PACKET_BYTES = 17;
-	private static final int MAXIMUM_PACKET_BYTES = 256; // MTU for AX25
+	private static final int MAXIMUM_PACKET_BYTES = 330; // MTU for AX25
 	private static final int FLAG_LENGTH_IN_BAUD = 9; // 0x7E
 	private boolean containsStartFlag = false;
 
@@ -93,10 +164,11 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 			if (containsStartFlag) {
 				int bytesBetweenFlags = (int) ((sampleArray.size()
 						- samplesInFlag * 2 - BUFFER_SAMPLES_AFTER_FLAG) / samplesPerBaud) / 8;
-				//If the size is right, try to decode it otherwise clean up local storage
+				// If the size is right, try to decode it otherwise clean up
+				// local storage
 				if (bytesBetweenFlags >= MINIMUM_PACKET_BYTES
 						&& bytesBetweenFlags <= MAXIMUM_PACKET_BYTES) {
-					// System.out.println("Number of Potential Packtes: " +
+					// System.out.println("Number of Potential Packets: " +
 					// ++numPotentialPackets + " with size: " +
 					// bytesBetweenFlags);
 					processPacket(new ArrayList<Float>(sampleArray));
@@ -112,27 +184,73 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 		}
 	}
 
-	
 	/**
-	 * Once we have enough data actually try and demodulate the packet using this overly
-	 * complicated method.
+	 * Once we have enough data actually try and demodulate the packet using
+	 * this overly complicated method.
 	 */
 	private void processPacket(ArrayList<Float> samples) {
-		ArrayList<Float> frequencyData = getPacketFrequencies(samples);
-		ArrayList<Float> detectedFreqTransitions = getTransitionsFromFreqData(frequencyData);
-		int combOffset = getCombIndex(detectedFreqTransitions);
-//		System.out.println(combOffset);
-		ArrayList<Frequency> frequencySymbolList = getFrequencySymbolList(combOffset, samples);
-		generatePacket(frequencySymbolList);
-		for (int i = 0; i < Math.round(samplesPerBaud); i ++)
+		if (combIdx == -1)
 		{
-			frequencySymbolList = getFrequencySymbolList(i, samples);
+			ArrayList<Float> detectedFreqTransitions = getFreqTransition(samples);
+			int combOffset = getCombIndex(detectedFreqTransitions);
+			//System.out.println(combOffset);
+			ArrayList<Frequency> frequencySymbolList = getFrequencySymbolList(combOffset, samples);
+			generatePacket(frequencySymbolList);
+		}
+		else
+		{
+			ArrayList<Frequency> frequencySymbolList = getFrequencySymbolList(combIdx, samples);
 			generatePacket(frequencySymbolList);
 		}
 	}
 
+	private ArrayList<Float> getFreqTransition(ArrayList<Float> samples) {
+		ArrayList<Float> detectedTransitions = new ArrayList<Float>();
+		ArrayList<Float> slidingWindow = new ArrayList<Float>();
+		float lastPower = 0;
+		
+		for (int i = 0; i < samples.size(); i ++)
+		{
+			float sample = samples.get(i);
+			slidingWindow.add(sample);
+			if (slidingWindow.size() >= (samplesPerBaud * (1 + overlap))) {
+				slidingWindow.remove(0);
+				float s1200 = 0;
+				float s2200 = 0;
+				float s1200_prev = 0;
+				float s1200_prev2 = 0;
+				float s2200_prev = 0;
+				float s2200_prev2 = 0;
+				for (int j = 0; j < slidingWindow.size(); j++) {
+					s1200 = slidingWindow.get(j) + coeff1200 * s1200_prev
+							- s1200_prev2;
+					s1200_prev2 = s1200_prev;
+					s1200_prev = s1200;
+					s2200 = slidingWindow.get(j) + coeff2200 * s2200_prev
+							- s2200_prev2;
+					s2200_prev2 = s2200_prev;
+					s2200_prev = s2200;
+				}
+				float power = (s1200_prev2 * s1200_prev2 + s1200_prev
+						* s1200_prev - coeff1200 * s1200_prev * s1200_prev2)
+						- (s2200_prev2 * s2200_prev2 + s2200_prev * s2200_prev - coeff2200
+								* s2200_prev * s2200_prev2);
+
+				if (power >= 0 && lastPower < 0 ||
+						power <= 0 && lastPower > 0)
+				{
+					detectedTransitions.add((float)(i - 1) + zeroCrossingPercentage(lastPower, power));
+				}
+				lastPower = power;
+			}
+		}
+		
+		return detectedTransitions;
+	}
+
 	/**
 	 * Taking a frequency list f_1200/f_2200 actually put together the packet...
+	 * 
 	 * @param frequencySymbolList
 	 */
 	private void generatePacket(ArrayList<Frequency> frequencySymbolList) {
@@ -142,7 +260,7 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 		for (int i = 1; i < frequencySymbolList.size(); i++) {
 			bauds++;
 			if (frequencySymbolList.get(i) != lastFreq) {
-//				System.out.println(bauds + "," + frequencySymbolList.get(i));
+				// System.out.println(bauds + "," + frequencySymbolList.get(i));
 				handleDemodulatedBits(bauds);
 				bauds = 0;
 				lastFreq = frequencySymbolList.get(i);
@@ -152,17 +270,19 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 
 	/**
 	 * Using the calculated data compose a list of the best guess of frequencies
-	 * for each bit period of this packet. 
+	 * for each bit period of this packet.
+	 * 
 	 * @param combOffset
 	 * @param frequenciesFromDerivative
 	 * @param derivativeCrossingPositions
 	 * @return
 	 */
-	private ArrayList<Frequency> getFrequencySymbolList(int combOffset, ArrayList<Float> sampleData) {
+	private ArrayList<Frequency> getFrequencySymbolList(int combOffset,
+			ArrayList<Float> sampleData) {
 		ArrayList<Frequency> frequencies = new ArrayList<Frequency>();
 
 		for (Float i = new Float(combOffset); i < sampleData.size(); i += samplesPerBaud) {
-			Frequency freq = getFrequency(i + 1, i + samplesPerBaud, sampleData);
+			Frequency freq = getFrequency(i + 1 - (samplesPerBaud*overlap), i + (samplesPerBaud*(1+overlap)), sampleData);
 			if (freq != null) {
 				frequencies.add(freq);
 			}
@@ -172,7 +292,7 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 	}
 
 	/**
-	 * Get the average frequency for this bit period. Using zero crossings.
+	 * Get the average frequency for this bit period.
 	 * 
 	 * @param start
 	 * @param end
@@ -180,39 +300,42 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 	 * @param derivativeCrossingPositions
 	 * @return
 	 */
-	private Frequency getFrequency(float start, float end,
-			ArrayList<Float> data) {
+	private Frequency getFrequency(float start, float end, ArrayList<Float> data) {
 		int startIdx = Math.round(start);
+		if (startIdx < 0)
+			startIdx = 0;
 		int endIdx = Math.round(end);
 
 		float s1200 = 0;
 		float s2200 = 0;
-	    float s1200_prev = 0;
-	    float s1200_prev2 = 0;
-	    float s2200_prev = 0;
-	    float s2200_prev2 = 0;
-	    for (int i = startIdx; i <= endIdx && i < data.size(); i ++)
-	    {
-	       s1200 = data.get(i)+coeff1200 * s1200_prev - s1200_prev2;
-	       s1200_prev2 = s1200_prev;
-	       s1200_prev = s1200;
-	       s2200 = data.get(i)+coeff2200 * s2200_prev - s2200_prev2;
-	       s2200_prev2 = s2200_prev;
-	       s2200_prev = s2200;
-	    }
-	    
-	    float power = (s1200_prev2*s1200_prev2+s1200_prev*s1200_prev-coeff1200*s1200_prev*s1200_prev2) -
-	    		(s2200_prev2*s2200_prev2+s2200_prev*s2200_prev-coeff2200*s2200_prev*s2200_prev2);
-	    //System.out.println(power + "  ");
-	    
-	    Frequency freq = power > 0 ? Frequency.f_1200 : Frequency.f_2200;
-	    
+		float s1200_prev = 0;
+		float s1200_prev2 = 0;
+		float s2200_prev = 0;
+		float s2200_prev2 = 0;
+		for (int i = startIdx; i <= endIdx && i < data.size(); i++) {
+			s1200 = data.get(i) + coeff1200 * s1200_prev - s1200_prev2;
+			s1200_prev2 = s1200_prev;
+			s1200_prev = s1200;
+			s2200 = data.get(i) + coeff2200 * s2200_prev - s2200_prev2;
+			s2200_prev2 = s2200_prev;
+			s2200_prev = s2200;
+		}
+
+		float power = (s1200_prev2 * s1200_prev2 + s1200_prev * s1200_prev - coeff1200
+				* s1200_prev * s1200_prev2)
+				- (s2200_prev2 * s2200_prev2 + s2200_prev * s2200_prev - coeff2200
+						* s2200_prev * s2200_prev2);
+		// System.out.println(power + "  ");
+
+		Frequency freq = power > 0 ? Frequency.f_1200 : Frequency.f_2200;
+
 		return freq;
 	}
 
 	/**
-	 * Using the data for the detected frequency transition indexes, figure out which
-	 * index into the packet data best corresponds to the start of a bit period.
+	 * Using the data for the detected frequency transition indexes, figure out
+	 * which index into the packet data best corresponds to the start of a bit
+	 * period.
 	 * 
 	 * @param detectedFreqTransitions
 	 * @return
@@ -233,6 +356,7 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 			long squaredDistance = 0;
 			for (int j = 0; j < detectedFreqTransitions.size(); j++) {
 				squaredDistance += Math.pow(modulusValues.get(j) - i, 2);
+//				System.out.println(squaredDistance);
 			}
 			if (minimumSquaredDistance == -1
 					|| minimumSquaredDistance > squaredDistance) {
@@ -245,70 +369,9 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 	}
 
 	/**
-	 * Take a list of frequency data and return a list of indexes into this list
-	 * which correspond to transitions through 1700Hz (half way between 1200 & 2200)
+	 * If the first sample has the opposite sign of the second sample return
+	 * true
 	 * 
-	 * @param frequencyData
-	 * @return
-	 */
-	private ArrayList<Float> getTransitionsFromFreqData(ArrayList<Float> frequencyData) {
-		ArrayList<Float> sampleNumbersOfFrequencyTransitions = new ArrayList<Float>();
-
-		for (int i = 1; i < frequencyData.size(); i++) {
-			if (isZeroCrossing(frequencyData.get(i - 1), frequencyData.get(i))) {
-				sampleNumbersOfFrequencyTransitions.add(i - 1 +
-						zeroCrossingPercentage(frequencyData.get(i - 1), frequencyData.get(i)));
-			}
-		}
-
-		return sampleNumbersOfFrequencyTransitions;
-	}
-
-	/**
-	 * Take a list of zero crossing locations and convert those to frequencies
-	 * 
-	 * @param data
-	 * @return
-	 */
-	private ArrayList<Float> getPacketFrequencies(ArrayList<Float> data) {
-		ArrayList<Float> freqs = new ArrayList<Float>();
-		ArrayList<Float> slidingWindow = new ArrayList<Float>();
-
-		for (float sample : data)
-		{
-			slidingWindow.add(sample);
-			if (slidingWindow.size() >= samplesPerBaud)
-			{
-				slidingWindow.remove(0);
-				float s1200 = 0;
-				float s2200 = 0;
-				float s1200_prev = 0;
-				float s1200_prev2 = 0;
-				float s2200_prev = 0;
-				float s2200_prev2 = 0;
-				for (int i = 0; i < slidingWindow.size(); i ++)
-				{
-					s1200 = slidingWindow.get(i)+coeff1200 * s1200_prev - s1200_prev2;
-					s1200_prev2 = s1200_prev;
-					s1200_prev = s1200;
-					s2200 = slidingWindow.get(i)+coeff2200 * s2200_prev - s2200_prev2;
-					s2200_prev2 = s2200_prev;
-					s2200_prev = s2200;
-				}
-				float power = (s1200_prev2*s1200_prev2+s1200_prev*s1200_prev-coeff1200*s1200_prev*s1200_prev2) -
-						(s2200_prev2*s2200_prev2+s2200_prev*s2200_prev-coeff2200*s2200_prev*s2200_prev2);
-				//System.out.println(power + "  ");
-				
-
-			    //Frequency freq = power > 0 ? Frequency.f_1200 : Frequency.f_2200;
-				freqs.add(power);
-			}
-		}
-		return freqs;
-	}
-
-	/**
-	 * If the first sample has the opposite sign of the second sample return true
 	 * @param firstSample
 	 * @param secondSample
 	 * @return
@@ -322,6 +385,7 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 
 	/**
 	 * Interpolation
+	 * 
 	 * @param firstSample
 	 * @param secondSample
 	 * @return
@@ -332,24 +396,25 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 	}
 
 	/**
-	 * Since we process one packet at a time we need to shrink the internal buffer after
-	 * we processes a potential packet or know that there isn't a packet contained within
-	 * the data due to the size.
+	 * Since we process one packet at a time we need to shrink the internal
+	 * buffer after we processes a potential packet or know that there isn't a
+	 * packet contained within the data due to the size.
 	 */
 	private void shrinkSampleArray() {
 		int index = sampleArray.size() - 1 - samplesInFlag * 2
 				- Math.round(samplesPerBaud);
 		if (index < 0)
 			index = 0;
-		sampleArray = new ArrayList<Float>(sampleArray.subList(index, sampleArray.size() - 1));
+		sampleArray = new ArrayList<Float>(sampleArray.subList(index,
+				sampleArray.size() - 1));
 	}
 
 	private int samplesThisFreq;
 	private Frequency currentFreq;
-	
+
 	/**
-	 * Once we receive a sample that completes six consecutive symbols that are the same
-	 * then we have seen a flag. 0x7E = 01111110
+	 * Once we receive a sample that completes six consecutive symbols that are
+	 * the same then we have seen a flag. 0x7E = 01111110
 	 * 
 	 * @param sample
 	 * @return
@@ -357,41 +422,40 @@ public class GoertzelPreClockingDemodulator extends PacketDemodulator // impleme
 	private boolean containsFlag(float sample) {
 		boolean retVal = false;
 		window.add(sample);
-		if (window.size() >= samplesPerBaud)
-		{
+		if (window.size() >= (samplesPerBaud * (1 + 2 * overlap))) {
 			window.remove(0);
 			double s1200 = 0;
 			double s2200 = 0;
-		    double s1200_prev = 0;
-		    double s1200_prev2 = 0;
-		    double s2200_prev = 0;
-		    double s2200_prev2 = 0;
-		    for (int i = 0; i < window.size(); i ++)
-		    {
-		       s1200 = window.get(i)+coeff1200 * s1200_prev - s1200_prev2;
-		       s1200_prev2 = s1200_prev;
-		       s1200_prev = s1200;
-		       s2200 = window.get(i)+coeff2200 * s2200_prev - s2200_prev2;
-		       s2200_prev2 = s2200_prev;
-		       s2200_prev = s2200;
-		    }
-		    double power = (s1200_prev2*s1200_prev2+s1200_prev*s1200_prev-coeff1200*s1200_prev*s1200_prev2) -
-		    		(s2200_prev2*s2200_prev2+s2200_prev*s2200_prev-coeff2200*s2200_prev*s2200_prev2);
-		    //System.out.println(power + "  ");
-		    Frequency freq = power > 0 ? Frequency.f_1200 : Frequency.f_2200;
-		    
-		    if (Math.round(samplesThisFreq/samplesPerBaud) >=1 && freq != currentFreq)
-		    {
-		    	int bits = Math.round(samplesThisFreq / samplesPerBaud);
-		    	samplesThisFreq = 0;
-		    	currentFreq = freq;
-		    	
+			double s1200_prev = 0;
+			double s1200_prev2 = 0;
+			double s2200_prev = 0;
+			double s2200_prev2 = 0;
+			for (int i = 0; i < window.size(); i++) {
+				s1200 = window.get(i) + coeff1200 * s1200_prev - s1200_prev2;
+				s1200_prev2 = s1200_prev;
+				s1200_prev = s1200;
+				s2200 = window.get(i) + coeff2200 * s2200_prev - s2200_prev2;
+				s2200_prev2 = s2200_prev;
+				s2200_prev = s2200;
+			}
+			double power = (s1200_prev2 * s1200_prev2 + s1200_prev * s1200_prev - coeff1200
+					* s1200_prev * s1200_prev2)
+					- (s2200_prev2 * s2200_prev2 + s2200_prev * s2200_prev - coeff2200
+							* s2200_prev * s2200_prev2);
+			// System.out.println(power + "  ");
+			Frequency freq = power > 0 ? Frequency.f_1200 : Frequency.f_2200;
+
+			if (Math.round(samplesThisFreq / samplesPerBaud) >= 1
+					&& freq != currentFreq) {
+				int bits = Math.round(samplesThisFreq / samplesPerBaud);
+				samplesThisFreq = 0;
+				currentFreq = freq;
 
 				if (bits == 7) {
 					retVal = true;
 				}
-		    }
-		    samplesThisFreq++;
+			}
+			samplesThisFreq++;
 		}
 
 		return retVal;
