@@ -30,7 +30,7 @@ public class PLLDemodulator extends PacketDemodulator // implements
 	private final static String PLL = "PLL";
 
 	public String getDemodulatorName() {
-		return PLL + "-w_emphasis_" + emphasis;
+		return PLL + pll_loop_gain + "_" + filtFreq + "-w_emphasis_" + emphasis;
 	}
 
 	private static final int DEBUG = -1;
@@ -43,6 +43,7 @@ public class PLLDemodulator extends PacketDemodulator // implements
     private double pll_integral;
     private boolean lastGreaterThanZero;
     private int sampleNum;
+    private float filtFreq;
 
 	public PLLDemodulator(int sample_rate, int filter_length)
 			throws Exception {
@@ -54,12 +55,22 @@ public class PLLDemodulator extends PacketDemodulator // implements
 		super(sample_rate, filter_length, emphasis, h);
 		pll_integral = 0;
 		pll_cf = 1700;
-		pll_loop_gain = 0.68f;
+		pll_loop_gain = 6f;//0.68f;
 		ref_sig = 0;
 		this.samplesPerBit = (float) sample_rate / 1200.0f;
 		this.currentFreq = Frequency.f_1200;
+		this.filtFreq = 470;
 		biQuad = new BiQuadFilter(500, 48000, (float)(1/Math.sqrt(2)));
 		sampleNum = 0;
+	}
+
+	public PLLDemodulator(int sample_rate, int filter_length, int emphasis,
+			PacketHandler h, float gain, float filtFreq) throws Exception {
+		this( sample_rate,  filter_length,  emphasis, h);
+		
+		biQuad = new BiQuadFilter(filtFreq, 48000, (float)(1/Math.sqrt(2)));
+		pll_loop_gain = gain;
+	    this.filtFreq = filtFreq;
 	}
 
 	protected void addSamplePrivate(float sample) {
