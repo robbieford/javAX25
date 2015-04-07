@@ -59,7 +59,7 @@ public class PLLDemodulator extends PacketDemodulator // implements
 		ref_sig = 0;
 		this.samplesPerBit = (float) sample_rate / 1200.0f;
 		this.currentFreq = Frequency.f_1200;
-		this.filtFreq = 470;
+		this.filtFreq = 475;
 		biQuad = new BiQuadFilter(500, 48000, (float)(1/Math.sqrt(2)));
 		sampleNum = 0;
 	}

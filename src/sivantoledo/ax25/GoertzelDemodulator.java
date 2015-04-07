@@ -56,7 +56,7 @@ public class GoertzelDemodulator extends PacketDemodulator // implements
 		super(sample_rate, filter_length, emphasis, h);
 
 		this.samplesPerBit = (float) sample_rate / 1200.0f;
-		this.windowSize = (int)Math.round(Math.floor(samplesPerBit));
+		this.windowSize = (int)Math.round(Math.floor(samplesPerBit) * 1.35);
 		window = new ArrayList<Float>(windowSize);
 	    this.normalized1200Freq = 1200f/sample_rate;
 	    this.normalized2200Freq = 2200f/sample_rate;
