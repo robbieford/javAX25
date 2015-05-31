@@ -58,7 +58,7 @@ public class ZeroCrossingDemodulator extends PacketDemodulator // implements
 	private int sampleHistoryLength;
 	private int samplesSinceLastRecalc;
 	private float monotonicThreshold;
-	private static final float ZERO_CROSSING_THRESHOLD_PERCENTAGE = 0.5f;
+	private static final float ZERO_CROSSING_THRESHOLD_PERCENTAGE = 0.1f;//64 @ 0.5, 375 @ 0.2, 460 @ 0.1
 	private static final float MONOTONIC_THRESHOLD_PERCENTAGE = 0.05f;
 	private float averageValueInHistory;
 	private float zeroCrossingThreshold;
@@ -121,7 +121,7 @@ public class ZeroCrossingDemodulator extends PacketDemodulator // implements
 				}
 			}
 
-			// if (isSamplesIncreasing()){
+			// going low to high
 			if (!isSignalHigh
 					&& samples.get(samples.size() - 1) > averageValueInHistory
 							+ zeroCrossingThreshold) {
@@ -134,8 +134,7 @@ public class ZeroCrossingDemodulator extends PacketDemodulator // implements
 				}
 				handleZeroCrossing();
 			}
-			// }
-			// else {
+			//going high to low
 			if (isSignalHigh
 					&& samples.get(samples.size() - 1) < averageValueInHistory
 							- zeroCrossingThreshold) {

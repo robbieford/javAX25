@@ -31,6 +31,27 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 	ArrayList<Float> sampleBuffer;
 	int rate_index, filter_index;
 
+	//Sample interpolation
+	private boolean interpolate = false;
+	private float interpolate_last;
+	private boolean interpolate_original;
+
+	// Packet Construction variables
+	private int data, bitcount;
+	private Packet packet; // received packet
+	protected PacketHandler handler;
+	private State state = State.WAITING;
+	protected int emphasis;
+	private int flag_count = 0;
+	private boolean flag_separator_seen = false; // to process the single-bit separation period between flags
+	private int decode_count = 0;
+
+	// Diagnostic variables for estimating packet quality
+	private int f0_period_count, f1_period_count;
+	private float f0_max, f1_min; // to collect average max, min in the filtered
+	private float max_period_error;
+	private boolean data_carrier;
+
 	public abstract String getDemodulatorName();
 
 	public PacketDemodulator(int sample_rate, int filter_length, int emphasis, PacketHandler h)
@@ -109,10 +130,6 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 		handler = h;
 	}
 
-	private boolean interpolate = false;
-	private float interpolate_last;
-	private boolean interpolate_original;
-
 	protected void addSamplesPrivate(float[] s, int n) {
 		int i = 0;
 		while (i < n)
@@ -158,26 +175,8 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 		WAITING, JUST_SEEN_FLAG, DECODING
 	};
 
-	// Packet Construction variables
-	private int data, bitcount;
-	private Packet packet; // received packet
-	protected PacketHandler handler;
-	private State state = State.WAITING;
-	protected int emphasis;
-	private int flag_count = 0;
-	private boolean flag_separator_seen = false; // to process the single-bit
-													// separation period between
-													// flags
-	private int decode_count = 0;
-
-	// Diagnostic variables for estimating packet quality
-	private int f0_period_count, f1_period_count;
-	private float f0_max, f1_min; // to collect average max, min in the filtered
-	private float max_period_error;
-	private boolean data_carrier;
-
 	private void statisticsInit() {
-		dcd();
+		//dcd();
 		f0_period_count = 0;
 		f1_period_count = 0;
 		f0_max = 0.0f;
@@ -191,7 +190,7 @@ public abstract class PacketDemodulator extends SoundcardConsumer {
 	}
 
 	/**
-	 * Once bits have been demodualted pass to this function to construct the
+	 * Once bits have been demodulated pass to this function to construct the
 	 * packet.
 	 * 
 	 * @param bits

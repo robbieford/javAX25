@@ -19,6 +19,8 @@
  */
 package sivantoledo.ax25;
 
+import sivantoledo.ax25.PacketDemodulator.Frequency;
+
 public class PeakDemodulator extends PacketDemodulator // implements
 // HalfduplexSoundcardClient
 {
@@ -40,18 +42,20 @@ public class PeakDemodulator extends PacketDemodulator // implements
 	// Variables
 	private long samplesReceived;
 	private float samplesPerBit;
-	private static final float SAMPLE_BUFFER_AMOUNT = 4.0f;
+	private static final float SAMPLE_BUFFER_AMOUNT = 2.5f;
 	private int samplesSinceLastPeak;
 	private int samplesSinceTransition;
 	private float previousSample;
 	private float secPreviousSample;
+	private float thirdPreviousSample;
+	private float s, s1, s2, s3;
 	private boolean isIncreasing = false;
 	private float localPeak;
 	private float localPeakSampleNum;
 	private float prevLocalPeakSampleNum;
-	private float prevSamplesBtPeaks;
+	private float prevSamplesBetweenPeaks;
 
-	boolean isLastTran = true;
+	boolean wasLastATransition = true;
 
 	public PeakDemodulator(int sample_rate, int filter_length) throws Exception {
 		this(sample_rate, filter_length, 6, null);
@@ -66,12 +70,14 @@ public class PeakDemodulator extends PacketDemodulator // implements
 		samplesSinceLastPeak = 0;
 		previousSample = 0;
 		secPreviousSample = 0;
+		thirdPreviousSample = 0;
+		s = s1 = s2 = s3 = 0;
 		samplesReceived = 0;
 		samplesSinceTransition = 0;
 		localPeakSampleNum = 0;
 		localPeak = 0;
 		prevLocalPeakSampleNum = 0;
-		prevSamplesBtPeaks = 0;
+		prevSamplesBetweenPeaks = 0;
 
 		if (DEBUG > 0)
 			System.err.printf("samples per bit = %.3f\n", this.samplesPerBit);
@@ -92,13 +98,17 @@ public class PeakDemodulator extends PacketDemodulator // implements
 		return sample >= 0;
 	}
 
-	protected void addSamplePrivate(float sample) {
+	protected void addSamplePrivate(float rawSample) {
+		s = Math.abs(rawSample);
+		
 		samplesSinceLastPeak++;
 		samplesReceived++;
 		samplesSinceTransition++;
 
-		sample = (sample + previousSample + secPreviousSample) / 3.0f;
-		// sample = (s[i] + previousSample)/2.0f;// + secPreviousSample)/3.0f;
+		float sample = (s + s1 + s2) / 3.0f;
+		//sample = (sample + previousSample + secPreviousSample + thirdPreviousSample) / 4.0f;
+		//sample = (sample + previousSample + secPreviousSample) / 3.0f;
+		// sample = (sample + previousSample)/2.0f;
 
 		if (DEBUG > 9) {
 			System.out.println("Sample number: " + samplesReceived
@@ -110,8 +120,7 @@ public class PeakDemodulator extends PacketDemodulator // implements
 				localPeak = sample;
 				localPeakSampleNum = samplesReceived;
 			}
-			if ((sample < previousSample)
-					&& (previousSample < secPreviousSample)) {
+			if ((sample < previousSample) && (previousSample < secPreviousSample) && (secPreviousSample < thirdPreviousSample)) {
 				isIncreasing = false;
 
 				if (DEBUG > 2)
@@ -126,51 +135,51 @@ public class PeakDemodulator extends PacketDemodulator // implements
 				samplesSinceLastPeak = 0;
 			}
 		} else {
-			if ((sample > previousSample)
-					&& (previousSample > secPreviousSample)) {
+			if ((sample > previousSample) && (previousSample > secPreviousSample) && (secPreviousSample > thirdPreviousSample)) {
 				isIncreasing = true;
 				localPeak = sample;
-				localPeakSampleNum = samplesSinceLastPeak;
+				localPeakSampleNum = samplesReceived;
 			}
 		}
 
+		s3 = s2;
+		s2 = s1;
+		s1 = s;
+		thirdPreviousSample = secPreviousSample;
 		secPreviousSample = previousSample;
 		previousSample = sample;
 
 	}
-
+	
 	private void handlePeakDetection() {
 
-		float samplesBtPeaks = localPeakSampleNum - prevLocalPeakSampleNum;
+		float samplesBetweenPeaks = localPeakSampleNum - prevLocalPeakSampleNum;
 
-		if (isLastTran)
-			prevSamplesBtPeaks = samplesBtPeaks;
-
-		float diff = Math.abs(samplesBtPeaks - prevSamplesBtPeaks);
-
-		if (diff >= SAMPLE_BUFFER_AMOUNT) {// && samplesSinceTransition >
-											// samplesPerBit/2.0f) {
-
-			isLastTran = true;
-
-			int bits = (int) Math.round((double) samplesSinceTransition
-					/ (double) samplesPerBit);
-
-			if (DEBUG > 1) {
-				System.out.println(samplesReceived + " " + bits
-						+ " -Transition Occurred. Prev Tran occurred "
-						+ samplesSinceTransition + " diff: " + diff);
-				// System.out.println(bits);
-			}
-
-			samplesSinceTransition = 0;
-
-			handleDemodulatedBits(bits);
-		} else {
-			isLastTran = false;
+		if (!wasLastATransition)
+		{
+			float diff = Math.abs(samplesBetweenPeaks - prevSamplesBetweenPeaks);
+	
+			if (diff >= SAMPLE_BUFFER_AMOUNT && samplesSinceTransition > samplesPerBit/2.0f) {
+	
+				wasLastATransition = true;
+	
+				int bits = (int) Math.round((double) samplesSinceTransition / (double) samplesPerBit);
+	
+				if (DEBUG > 1) {
+					System.out.println(samplesReceived + " " + bits+ " -Transition Occurred. Prev Tran occurred " + samplesSinceTransition + " diff: " + diff);
+				}
+	
+				samplesSinceTransition = 0;
+	
+				handleDemodulatedBits(bits);
+			} 
+		} 
+		else {
+			wasLastATransition = false;
 		}
+		
 		samplesSinceLastPeak = 0;
-		prevSamplesBtPeaks = samplesBtPeaks;
+		prevSamplesBetweenPeaks = samplesBetweenPeaks;
 	}
 
 }

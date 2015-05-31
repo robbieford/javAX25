@@ -52,12 +52,6 @@ public class WindowedZeroCrossingDemodulator extends PacketDemodulator // implem
 
 	private Frequency lastFrequencySeen;
 	ArrayList<Float> sampleArray;
-	float[] td_filter;
-
-	private int filter_index;
-
-	private int rate_index;
-
 
 	public WindowedZeroCrossingDemodulator(int sample_rate, int filter_length)
 			throws Exception {
@@ -70,15 +64,12 @@ public class WindowedZeroCrossingDemodulator extends PacketDemodulator // implem
 
 		this.samplesPerBit = (float) sample_rate / 1200.0f;
 
-		minimumZeroXingSamples = 4;
+		minimumZeroXingSamples = 4; //was 4
 		samplesReceived = 0;
 		samplesSinceFreqTransition = 0;
-		// samplesInWindow = Math.round(sample_rate / 1200.0f) - 2;
-		samplesInWindow = Math.round(samplesPerBit - 4); // Math.round(samplesPerBit
-															// *
-															// WINDOW_SIZE_IN_PERCENTAGE);
+		samplesInWindow = Math.round(samplesPerBit - 3); //217 @ 4, 298 @3
 		window = new ArrayList<Float>(samplesInWindow);
-		crossingRecountInterval = 3;// Math.round(samplesPer2200ZeroXing/2.0f);
+		crossingRecountInterval = 3; //217 @ 3
 		sampleArray = new ArrayList<Float>();
 	}
 
@@ -112,13 +103,11 @@ public class WindowedZeroCrossingDemodulator extends PacketDemodulator // implem
 				int crossings = calculateCrossingsInWindow();
 				samplesSinceCrossingRecount = 0;
 
-				if (crossings == _1200CrossingsInWindow) {
+				if (crossings <= _1200CrossingsInWindow) {
 					freq = Frequency.f_1200;
-				} else if (crossings > _1200CrossingsInWindow) {
-					freq = Frequency.f_2200;
 				} else {
-					// who knows?
-				}
+					freq = Frequency.f_2200;
+				} 
 
 				if (freq != null && lastFrequencySeen != freq) {
 					int bits = Math.round(samplesSinceFreqTransition
@@ -130,7 +119,6 @@ public class WindowedZeroCrossingDemodulator extends PacketDemodulator // implem
 									+ bits + " -Switched Freq from "
 									+ lastFrequencySeen);
 						}
-						// System.out.println(bits + "     " + samplesReceived);
 						handleDemodulatedBits(bits);
 						lastFrequencySeen = freq;
 						samplesSinceFreqTransition = 0;
@@ -139,7 +127,7 @@ public class WindowedZeroCrossingDemodulator extends PacketDemodulator // implem
 							System.out
 									.println("\t\tGot 0 bits, wait for one more sample - "
 											+ samplesReceived);
-						samplesSinceCrossingRecount = crossingRecountInterval + 1;
+						samplesSinceCrossingRecount = crossingRecountInterval + 1; //lets try again on the next go around
 					}
 				}
 			}

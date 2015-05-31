@@ -49,7 +49,6 @@ public class StrictZeroCrossingDemodulator extends PacketDemodulator // implemen
 
 	private float previousSample;
 	private float secPreviousSample;
-	private boolean foundFirstZeroCrossing = false;
 
 	// -----------------------------------------------------------------------------------^^^
 
@@ -64,7 +63,7 @@ public class StrictZeroCrossingDemodulator extends PacketDemodulator // implemen
 
 		this.samplesPerBit = (float) sample_rate / 1200.0f;
 
-		samplesPer1200ZeroXing = samplesPerBit / 2.0f;
+		samplesPer1200ZeroXing = samplesPerBit / 2.0f; //since the 1200Hz and 1200baud
 		samplesPer2200ZeroXing = (float) sample_rate / 2200.0f / 2.0f;
 		samplesSinceLastXing = 0;
 		minimumZeroXingSamples = (int) (samplesPer2200ZeroXing - 1);
@@ -104,7 +103,6 @@ public class StrictZeroCrossingDemodulator extends PacketDemodulator // implemen
 					+ " /Value: " + sample);
 		}
 
-		if (foundFirstZeroCrossing) {
 			if (samplesSinceLastXing >= minimumZeroXingSamples) {
 
 				if ((isSignalHigh && isBelowZero(sample))
@@ -114,13 +112,6 @@ public class StrictZeroCrossingDemodulator extends PacketDemodulator // implemen
 					isSignalHigh = !isSignalHigh;
 				}
 			}
-		} else {
-			if (isZeroCrossing(previousSample, sample)) {
-				foundFirstZeroCrossing = true;
-				samplesSinceLastXing = 0;
-				isSignalHigh = isAboveZero(sample);
-			}
-		}
 
 		secPreviousSample = previousSample;
 		previousSample = sample;
@@ -130,13 +121,8 @@ public class StrictZeroCrossingDemodulator extends PacketDemodulator // implemen
 
 		Frequency freq;
 
-		// The last zero crossing is semi-recently then lets change to the
-		// processing stage...
-		if (true) {
 			// Presumably we are in the decoding phase...
-			if (samplesSinceLastXing > ((samplesPer2200ZeroXing + samplesPer1200ZeroXing) / 2 - SAMPLE_BUFFER_AMOUNT)) { // round
-																															// down
-																															// slightly
+			if (samplesSinceLastXing > ((samplesPer2200ZeroXing + samplesPer1200ZeroXing) / 2 - SAMPLE_BUFFER_AMOUNT)) { // round down slightly
 				freq = Frequency.f_1200;
 			} else {
 				freq = Frequency.f_2200;
@@ -155,9 +141,6 @@ public class StrictZeroCrossingDemodulator extends PacketDemodulator // implemen
 						/ (double) samplesPerBit);
 
 				if (DEBUG > 1) {
-					// System.out.println(samplesReceived + " " + bits +
-					// " -Switched Freq from " + lastFrequencySeen + " to: " +
-					// freq );
 					System.out.println(bits);
 				}
 
@@ -166,8 +149,7 @@ public class StrictZeroCrossingDemodulator extends PacketDemodulator // implemen
 				samplesSinceFreqTransition = 0;
 			}
 			lastFrequencySeen = freq;
-		}
+		
 		samplesSinceLastXing = 0;
 	}
-
 }
