@@ -55,10 +55,9 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 			int emphasis, PacketHandler h) throws Exception {
 		super(sample_rate, filter_length, emphasis, h);
 
-		samplesInPacket = new ArrayList<Float>(); // Needs to big enough for
-														// the filter
+		samplesInPacket = new ArrayList<Float>(); 
 		sampleArray = new ArrayList<Float>();
-
+        
 		this.sampleRate = sample_rate;
 		this.samplesPerBaud = (float) sample_rate / 1200.0f;
 		samplesInFlag = Math.round(samplesPerBaud * FLAG_LENGTH_IN_BAUD);
@@ -114,7 +113,7 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 	private static final int MINIMUM_PACKET_BYTES = 17;
 	private static final int MAXIMUM_PACKET_BYTES = 256; // MTU for AX25
 	private static final int FLAG_LENGTH_IN_BAUD = 9; // 0x7E
-	private static final float CENTER_FREQUENCY = 1700f;
+	private static final float CENTER_FREQUENCY = 1700.0f;
 
 	private boolean containsStartFlag = false;
 
@@ -129,15 +128,12 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 			// something
 			// System.out.println("Saw a flag! " + t);
 			if (containsStartFlag) {
-				int bytesBetweenFlags = (int) ((sampleArray.size()
-						- samplesInFlag * 2 - BUFFER_SAMPLES_AFTER_FLAG) / samplesPerBaud) / 8;
+				int bytesBetweenFlags = (int) ((sampleArray.size() - samplesInFlag * 2 - BUFFER_SAMPLES_AFTER_FLAG) / samplesPerBaud) / 8;
 				//If the size is right, try to decode it otherwise clean up local storage
-				if (bytesBetweenFlags >= MINIMUM_PACKET_BYTES
-						&& bytesBetweenFlags <= MAXIMUM_PACKET_BYTES) {
-					// System.out.println("Number of Potential Packtes: " +
-					// ++numPotentialPackets + " with size: " +
-					// bytesBetweenFlags);
+				if (bytesBetweenFlags >= MINIMUM_PACKET_BYTES && bytesBetweenFlags <= MAXIMUM_PACKET_BYTES) {
+					// System.out.println("Number of Potential Packets: " + ++numPotentialPackets + " with size: " + bytesBetweenFlags);
 					samplesInPacket = new ArrayList<Float>(sampleArray);
+					
 					processPacket();
 					shrinkSampleArray();
 				} else {
@@ -163,10 +159,7 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 		ArrayList<Float> frequenciesFromDerivative = getFrequenciesSampleList(derivativeCrossingPositions);
 		ArrayList<Float> detectedFreqTransitions = getTransitionsFromFreqData(frequenciesFromDerivative);
 		int combOffset = getCombIndex(detectedFreqTransitions);
-		//System.out.println(combOffset);
-		ArrayList<Frequency> frequencySymbolList = getFrequencySymbolList(
-				combOffset, frequenciesFromDerivative,
-				derivativeCrossingPositions);
+		ArrayList<Frequency> frequencySymbolList = getFrequencySymbolList(combOffset, frequenciesFromDerivative,derivativeCrossingPositions);
 		generatePacket(frequencySymbolList);
 	}
 
@@ -181,7 +174,7 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 		for (int i = 1; i < frequencySymbolList.size(); i++) {
 			bauds++;
 			if (frequencySymbolList.get(i) != lastFreq) {
-				System.out.println(bauds + "," + frequencySymbolList.get(i));
+				//System.out.println(bauds + "," + frequencySymbolList.get(i));
 				handleDemodulatedBits(bauds);
 				bauds = 0;
 				lastFreq = frequencySymbolList.get(i);
@@ -197,14 +190,11 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 	 * @param derivativeCrossingPositions
 	 * @return
 	 */
-	private ArrayList<Frequency> getFrequencySymbolList(int combOffset,
-			ArrayList<Float> frequenciesFromDerivative,
-			ArrayList<Float> derivativeCrossingPositions) {
+	private ArrayList<Frequency> getFrequencySymbolList(int combOffset, ArrayList<Float> frequenciesFromDerivative, ArrayList<Float> derivativeCrossingPositions) {
 		ArrayList<Frequency> frequencies = new ArrayList<Frequency>();
 
-		for (Float i = new Float(combOffset); i < samplesInPacket.size(); i += samplesPerBaud) {
-			Frequency freq = getFrequency(i + 1, i + samplesPerBaud,
-					frequenciesFromDerivative, derivativeCrossingPositions);
+		for (Float i = new Float(combOffset); i < samplesInPacket.size(); i += samplesPerBaud) { //NOTE: Using array samples in packet instead of sample array
+			Frequency freq = getFrequency(i + 1, i + samplesPerBaud, frequenciesFromDerivative, derivativeCrossingPositions);
 			if (freq != null) {
 				frequencies.add(freq);
 			}
@@ -222,9 +212,7 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 	 * @param derivativeCrossingPositions
 	 * @return
 	 */
-	private Frequency getFrequency(float start, float end,
-			ArrayList<Float> frequenciesFromDerivative,
-			ArrayList<Float> derivativeCrossingPositions) {
+	private Frequency getFrequency(float start, float end,ArrayList<Float> frequenciesFromDerivative,ArrayList<Float> derivativeCrossingPositions) {
 		int startIdx = -1, endIdx = -1;
 		float sum = 0.0f;
 
@@ -235,7 +223,6 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 			}
 			if (endIdx < 0 && derivativeCrossingPositions.get(i) > end) {
 				endIdx = i - 1;
-				//Break?
 			}
 		}
 
@@ -247,8 +234,7 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 			sum += frequenciesFromDerivative.get(i);
 		}
 
-		Frequency freq = sum / (endIdx + 1 - startIdx) > CENTER_FREQUENCY ? Frequency.f_2200
-				: Frequency.f_1200;
+		Frequency freq = sum / (endIdx + 1 - startIdx) > CENTER_FREQUENCY ? Frequency.f_2200 : Frequency.f_1200; //Note:1700 instead of constant
 		return freq;
 	}
 
@@ -263,12 +249,10 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 		long minimumSquaredDistance = -1;
 		int sampleCombPosition = 0;
 
-		ArrayList<Integer> modulusValues = new ArrayList<Integer>(
-				detectedFreqTransitions.size());
+		ArrayList<Integer> modulusValues = new ArrayList<Integer>(detectedFreqTransitions.size());
 
 		for (int i = 0; i < detectedFreqTransitions.size(); i++) {
-			modulusValues.add(Math.round(detectedFreqTransitions.get(i))
-					% Math.round(samplesPerBaud));
+			modulusValues.add(Math.round(detectedFreqTransitions.get(i)) % Math.round(samplesPerBaud));
 		}
 
 		for (int i = 0; i < samplesPerBaud; i++) {
@@ -276,8 +260,7 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 			for (int j = 0; j < detectedFreqTransitions.size(); j++) {
 				squaredDistance += Math.pow(modulusValues.get(j) - i, 2);
 			}
-			if (minimumSquaredDistance == -1
-					|| minimumSquaredDistance > squaredDistance) {
+			if (minimumSquaredDistance == -1 || minimumSquaredDistance > squaredDistance) {
 				minimumSquaredDistance = squaredDistance;
 				sampleCombPosition = i;
 			}
@@ -294,12 +277,11 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 	 * @return
 	 */
 	private ArrayList<Float> getTransitionsFromFreqData(ArrayList<Float> freqs) {
-		ArrayList<Float> sampleNumbersOfFrequencyTransitions = new ArrayList<Float>();
+		ArrayList<Float> sampleNumbersOfFrequencyTransitions = new ArrayList<Float>(); //NOTE: different variable name.
 
 		for (int i = 1; i < freqs.size(); i++) {
-			if (isZeroCrossing(freqs.get(i - 1) - CENTER_FREQUENCY, freqs.get(i) - CENTER_FREQUENCY)) {
-				sampleNumbersOfFrequencyTransitions.add(i - 1 +
-						zeroCrossingPercentage(freqs.get(i - 1) - CENTER_FREQUENCY, freqs.get(i) - CENTER_FREQUENCY));
+			if (isZeroCrossing(freqs.get(i - 1) - CENTER_FREQUENCY, freqs.get(i) - CENTER_FREQUENCY)) { //NOTE: using 1700 instead of constant
+				sampleNumbersOfFrequencyTransitions.add(i - 1 + zeroCrossingPercentage(freqs.get(i - 1) - CENTER_FREQUENCY, freqs.get(i) - CENTER_FREQUENCY));
 			}
 		}
 
@@ -352,10 +334,8 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 	 * @return
 	 */
 	protected boolean isZeroCrossing(float firstSample, float secondSample) {
-		return ((firstSample <= 0 && secondSample > 0) || // Going from below
-															// zero to above OR
-		(firstSample >= 0 && secondSample < 0)); // Going from above zero to
-													// below
+		return ((firstSample <= 0 && secondSample > 0) || // Going from below zero to above OR
+				(firstSample >= 0 && secondSample < 0)); // Going from above zero to below
 	}
 
 	/**
@@ -374,14 +354,13 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 	 * @return the derivative of the sample array.
 	 */
 	private ArrayList<Float> getDerivativeOfFilteredData() {
-		ArrayList<Float> derivative = new ArrayList<Float>(
-				samplesInPacket.size());
+		ArrayList<Float> derivative = new ArrayList<Float>(samplesInPacket.size()); //NOTE: using samples in packet instead of filtered sample array
 
 		for (int i = 1; i < samplesInPacket.size() - 1; i++) {
 			derivative.add(samplesInPacket.get(i + 1) //y2 - 
 					- samplesInPacket.get(i - 1));  //y1
 			if (derivative.size() == 1) { //Make the derivative array the same size as the input. Add the first point twice.
-				derivative.add(derivative.get(0));
+				derivative.add(derivative.get(0)); //NOTE: use the already calculated value instead of recalculating
 			}
 		}
 		derivative.add(derivative.get(derivative.size() - 1)); //Add the last sample twice.
@@ -395,12 +374,10 @@ public class MixedPreClockingDemodulator extends PacketDemodulator // implements
 	 * the data due to the size.
 	 */
 	private void shrinkSampleArray() {
-		int index = sampleArray.size() - 1 - samplesInFlag * 2
-				- BUFFER_SAMPLES_AFTER_FLAG;
+		int index = sampleArray.size() - 1 - samplesInFlag * 2 - BUFFER_SAMPLES_AFTER_FLAG; //Leave at least two flags worth of data + buffer //NOTE: using sample array instead of filtered sample array
 		if (index < 0)
 			index = 0;
-		sampleArray = new ArrayList<Float>(sampleArray.subList(
-				index, sampleArray.size() - 1));
+		sampleArray = new ArrayList<Float>(sampleArray.subList(index, sampleArray.size() - 1));
 	}
 
 	/**
