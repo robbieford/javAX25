@@ -28,7 +28,7 @@ public class GoertzelMaxClockingDemodulator extends PacketDemodulator // impleme
 	/**
 	 * Class name items...
 	 */
-	private final static String PRECLOCKING = "GoertzelPreclockingDemodulator";
+	private final static String PRECLOCKING = "GoertzelMaxClockingDemodulator";
 	public String getDemodulatorName() {
 		return PRECLOCKING + "-w_emphasis_" + emphasis;
 	}
