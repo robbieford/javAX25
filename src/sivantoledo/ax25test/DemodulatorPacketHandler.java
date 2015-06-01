@@ -10,6 +10,8 @@ import sivantoledo.ax25.PacketHandler;
 
 public class DemodulatorPacketHandler implements PacketHandler {
 	
+	//public boolean duplicateCheckOnStringRepresentation = false;
+	public boolean ignoreSampleWaitTime = false;
 	private int packetCount = 0;
 	private PacketArray packets = new PacketArray();
 	byte[] last;
@@ -39,10 +41,16 @@ public class DemodulatorPacketHandler implements PacketHandler {
 	public void handlePacket(byte[] packet) {
 		if (DEBUG > 1)
 			System.out.println(Packet.format(packet));
-		
-		if (last!=null && Arrays.equals(last, packet) && !sufficientSamplesElapsed) {
+
+		if (last!=null && Arrays.equals(last, packet) && ignoreSampleWaitTime) {
 			dup_count++;
+			if (DEBUG > 2)
 			System.out.printf("Duplicate, %d so far\n",dup_count);
+		}
+		else if (last!=null && Arrays.equals(last, packet) && !sufficientSamplesElapsed) {
+			dup_count++;
+			if (DEBUG > 2)
+				System.out.printf("Duplicate, %d so far\n",dup_count);
 		} else {
 			packetCount++;
 			if (DEBUG > 2)
