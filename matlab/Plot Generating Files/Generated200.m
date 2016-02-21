@@ -7,7 +7,7 @@ y = fle(362001:362500);
 f = figure('Position',[0,0,1280,1024]);
 set(gcf,'color','w');
 plot(y);
-filename = 'Example Signal Segment from the 200 Packet Generated File';
+filename = '200 Packet Generated File Segment';
 title(filename);
 xlabel('Sample Number');
 ylabel('Magnitude');

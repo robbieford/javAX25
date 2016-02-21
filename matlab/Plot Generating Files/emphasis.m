@@ -9,7 +9,7 @@ set(gcf,'color','w');
 x1 = cat(2, x(1:78), x(82:200));
 yn1 = cat(2, y(1:78),y(82:200));
 plot(x1, yn1);
-filename = 'Effects of Deemphasis on a Signal that was not Preemphasized';
+filename = 'Deemphasized Signal that was not Preemphasized';
 title(filename);
 xlabel('Sample Number');
 ylabel('Magnitude');

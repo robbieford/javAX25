@@ -7,7 +7,7 @@ y = fle(220001:220500);
 f = figure('Position',[0,0,1280,1024]);
 set(gcf,'color','w');
 plot(y);
-filename = 'Example Signal Segment from the Generated File with Noise';
+filename = 'OpenTracker File with Noise Added Segment';
 title(filename);
 xlabel('Sample Number');
 ylabel('Magnitude');

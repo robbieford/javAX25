@@ -26,7 +26,7 @@ y = cat(2, y1(1:40), y2(1:40), y1(34:73), y2(20:59),y1(30:69));
 f = figure('Position',[0,0,1280,1024]);
 set(gcf,'color','w');
 plot(x, y);
-filename = 'Data signal encoding bitstream 0000 - With Noise';
+filename = 'Effects of Adding Noise to a Signal';
 title(filename);
 xlabel('Sample Number');
 ylabel('Magnitude');
