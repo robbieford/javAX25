@@ -16,8 +16,8 @@ fontSize = 19;
 %           Bandpass	872         0           0           0               0       0           448         0	939         230	
 %           6db         958         209         74          0               0       254         956         0	947         392	
 
-x = [939 964 965 985 988 1007];
-y = ['Mixed Preclocking' 'Correlation' 'Goertzel' 'Kam Plus (2)' 'Kam' 'PK-88 (2)'];
+x = [939 964 965 967 985 988 1007];
+y = ['Mixed Preclocking' 'Correlation' 'Goertzel' 'AGWPE' 'Kam Plus (2)' 'Kam' 'PK-88 (2)'];
 f = figure('Position',[0,0,1280,1024]);
 set(gcf,'color','w');
 bar(x);
@@ -25,7 +25,7 @@ filename = 'Best Software versus Best Hardware';
 title(filename);
 %xlabel('Devices');
 ylabel('Number of Packets Decoded');
-set(gca,'XTickLabel',{'Mixed Preclocking' 'Correlation' 'Goertzel' 'Kam Plus (2)' 'Kam' 'PK-88 (2)'})
+set(gca,'XTickLabel',{'Mixed Preclocking' 'Correlation' 'Goertzel' 'AGWPE' 'Kam Plus (2)' 'Kam' 'PK-88 (2)'})
 set(gca,'FontSize',fontSize, 'FontName', 'Times New Roman');
 set(findall(gcf,'type','text'),'FontSize',fontSize, 'FontName', 'Times New Roman');
 rotateXLabels(gca, 45)
