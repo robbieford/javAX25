@@ -21,6 +21,13 @@ y = ['Correlation' 'Zero Crossing' 'Strict Zero' 'Windowed Zero' 'Peak' 'Derivat
 f = figure('Position',[0,0,1280,1024]);
 set(gcf,'color','w');
 bar(x);
+ylim([0,28]);
+snr = 20./x;
+for i1=1:numel(x)
+    text(i1,x(i1),num2str(snr(i1),'%0.1f'),...
+               'HorizontalAlignment','center',...
+               'VerticalAlignment','bottom')
+end
 filename = 'Software Performance on Noisy OT3 w/ Bandpass Filter';
 title(filename);
 %xlabel('Devices');

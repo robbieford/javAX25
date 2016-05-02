@@ -12,6 +12,13 @@ y = ['OT2' 'OT3' 'OT USB' 'OT3 Micro' 'Kam' 'Kam Plus (1)' 'Kam Plus (2)' 'MFJ-1
 f = figure('Position',[0,0,1280,1024]);
 set(gcf,'color','w');
 bar(x);
+ylim([0,28]);
+snr = 20./x;
+for i1=1:numel(x)
+    text(i1,x(i1),num2str(snr(i1),'%0.1f'),...
+               'HorizontalAlignment','center',...
+               'VerticalAlignment','bottom')
+end
 filename = 'Performance of All Hardware on OT3 Test with Noise';
 title(filename);
 %xlabel('Devices');
